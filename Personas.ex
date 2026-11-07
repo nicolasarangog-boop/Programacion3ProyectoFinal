@@ -1,6 +1,10 @@
 defmodule Personas do
   @moduledoc """
   Gestiona el registro, consulta y actualización de personas afectadas.
+
+  Autores: Briyith Sanchez Alonso y Nicolás Arango Gutiérrez
+  Fecha: Noviembre 2026
+  Licencia:GNU GPL V3
   """
   @estados [
     "sin información",

@@ -1,6 +1,10 @@
 defmodule Mascotas do
   @moduledoc """
   Gestiona los reportes de mascotas perdidas y encontradas mediante un algoritmo de coincidencias.
+
+  Autores: Briyith Sanchez Alonso y Nicolás Arango Gutiérrez
+  Fecha: Noviembre 2026
+  Licencia:GNU GPL V3
   """
 
   @estados [
