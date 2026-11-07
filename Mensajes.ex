@@ -1,3 +1,4 @@
+
 defmodule Mensajes do
   @moduledoc """
   Gestiona el registro, consulta y actualización de mensajes entre personas afectadas y sus familiares.
@@ -11,13 +12,14 @@ defmodule Mensajes do
   ]
 
   @doc """
-  Registra un nuevo mensaje.
+  Registra un mensaje y verifica que sus participantes existan.
 
   Parámetros:
   - mensajes: lista de mensajes registrados.
+  - personas: lista de personas registradas.
   - datos: mapa con la información del mensaje.
   """
-  def registrar(mensajes, datos) do
+  def registrar(mensajes, personas, datos) do
     id = Map.get(datos, :id)
     remitente = Map.get(datos, :remitente)
     destinatario = Map.get(datos, :destinatario)
@@ -31,11 +33,11 @@ defmodule Mensajes do
       Enum.any?(mensajes, fn m -> m.id == id end) ->
         {:error, "El ID del mensaje ya existe"}
 
-      not is_binary(remitente) or String.trim(remitente) == "" ->
-        {:error, "Remitente inválido"}
+      not persona_existe?(personas, remitente) ->
+        {:error, "El remitente no está registrado"}
 
-      not is_binary(destinatario) or String.trim(destinatario) == "" ->
-        {:error, "Destinatario inválido"}
+      not persona_existe?(personas, destinatario) ->
+        {:error, "El destinatario no está registrado"}
 
       not is_binary(contenido) or String.trim(contenido) == "" ->
         {:error, "El contenido del mensaje no puede estar vacío"}
@@ -127,4 +129,14 @@ defmodule Mensajes do
       end
     end
   end
+
+  # Comprueba si existe una persona con el identificador indicado.
+  defp persona_existe?(personas, id) when is_binary(id) do
+    case Personas.buscar(personas, id) do
+      {:ok, _persona} -> true
+      {:error, _razon} -> false
+    end
+  end
+
+  defp persona_existe?(_personas, _id), do: false
 end
