@@ -1,4 +1,3 @@
-
 defmodule Mensajes do
   @moduledoc """
   Gestiona el registro, consulta y actualización de mensajes entre personas afectadas y sus familiares.
@@ -49,6 +48,9 @@ defmodule Mensajes do
       estado not in @estados ->
         {:error, "Estado del mensaje inválido"}
 
+      remitente == destinatario ->
+        {:error, "El remitente y el destinatario no pueden ser la misma persona"}
+
       true ->
         mensaje = %{
           id: id,
@@ -94,11 +96,18 @@ defmodule Mensajes do
   - mensajes: lista de mensajes registrados.
   - persona_id: identificador de la persona.
   """
-  def mensajes_por_persona(mensajes, persona_id) do
-    Enum.filter(mensajes, fn mensaje ->
-      mensaje.remitente == persona_id or
-        mensaje.destinatario == persona_id
-    end)
+  def mensajes_por_persona(mensajes, personas, persona_id) do
+    if persona_existe?(personas, persona_id) do
+      resultado =
+        Enum.filter(mensajes, fn mensaje ->
+          mensaje.remitente == persona_id or
+            mensaje.destinatario == persona_id
+        end)
+
+      {:ok, resultado}
+    else
+      {:error, "La persona no está registrada"}
+    end
   end
 
   @doc """
@@ -123,12 +132,24 @@ defmodule Mensajes do
           if mensaje.estado == nuevo_estado do
             {:error, "El mensaje ya tiene ese estado"}
           else
-            actualizado = %{mensaje | estado: nuevo_estado}
+            transicion_valida =
+              case mensaje.estado do
+                "pendiente" -> nuevo_estado == "enviado"
+                "enviado" -> nuevo_estado == "entregado"
+                "entregado" -> nuevo_estado == "leido"
+                "leido" -> false
+              end
 
-            nuevos_mensajes =
-              List.replace_at(mensajes, indice, actualizado)
+            if transicion_valida do
+              actualizado = %{mensaje | estado: nuevo_estado}
 
-            {:ok, nuevos_mensajes}
+              nuevos_mensajes =
+                List.replace_at(mensajes, indice, actualizado)
+
+              {:ok, nuevos_mensajes}
+            else
+              {:error, "Transición de estado no permitida"}
+            end
           end
       end
     end

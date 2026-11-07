@@ -109,7 +109,8 @@ defmodule Albergues do
             {:error, "El albergue no tiene cupos disponibles"}
 
           Enum.any?(albergues, fn otro_albergue ->
-            otro_albergue.codigo != codigo and id_persona in otro_albergue.personas end) ->
+            otro_albergue.codigo != codigo and id_persona in otro_albergue.personas
+          end) ->
             {:error, "La persona ya se encuentra en otro albergue"}
 
           true ->
@@ -323,4 +324,92 @@ defmodule Albergues do
 
   defp asociar_elemento(_albergues, _codigo, _identificador, _campo),
     do: {:error, "Datos inválidos"}
+
+  @doc """
+  Registra el ingreso de una persona y actualiza su estado.
+
+  Parámetros:
+  - albergues: lista actual de albergues.
+  - personas: lista actual de personas.
+  - codigo: código del albergue.
+  - id_persona: identificador de la persona que ingresa.
+  """
+  def ingresar_persona_integrado(albergues, personas, codigo, id_persona) do
+    case Personas.buscar(personas, id_persona) do
+      {:error, razon} ->
+        {:error, razon}
+
+      {:ok, persona} ->
+        if persona.estado == "en albergue" do
+          {:error, "La persona ya figura como alojada en un albergue"}
+        else
+          case ingresar_persona(albergues, codigo, id_persona) do
+            {:error, razon} ->
+              {:error, razon}
+
+            {:ok, nuevos_albergues} ->
+              case Personas.actualizar_estado(
+                     personas,
+                     id_persona,
+                     "en albergue"
+                   ) do
+                {:ok, nuevas_personas} ->
+                  {:ok, nuevos_albergues, nuevas_personas}
+
+                {:error, razon} ->
+                  {:error, razon}
+              end
+          end
+        end
+    end
+  end
+
+  @doc """
+  Registra la salida de una persona y actualiza su estado.
+
+  Parámetros:
+  - albergues: lista actual de albergues.
+  - personas: lista actual de personas.
+  - codigo: código del albergue.
+  - id_persona: identificador de la persona que sale.
+  """
+  def retirar_persona_integrado(albergues, personas, codigo, id_persona) do
+    case Personas.buscar(personas, id_persona) do
+      {:error, razon} ->
+        {:error, razon}
+
+      {:ok, persona} ->
+        if persona.estado != "en albergue" do
+          {:error, "La persona no figura como alojada en un albergue"}
+        else
+          case buscar(albergues, codigo) do
+            {:error, razon} ->
+              {:error, razon}
+
+            {:ok, albergue} ->
+              if id_persona not in albergue.personas do
+                {:error, "La persona no se encuentra en este albergue"}
+              else
+                case retirar_persona(albergues, codigo, id_persona) do
+                  {:error, razon} ->
+                    {:error, razon}
+
+                  {:ok, nuevos_albergues} ->
+                    case Personas.actualizar_estado(
+                           personas,
+                           id_persona,
+                           "localizada"
+                         ) do
+                      {:ok, nuevas_personas} ->
+                        {:ok, nuevos_albergues, nuevas_personas}
+
+                      {:error, razon} ->
+                        {:error, razon}
+                    end
+                end
+              end
+          end
+        end
+    end
+  end
 end
