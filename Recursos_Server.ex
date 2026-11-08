@@ -135,7 +135,11 @@ defmodule RecursosServer do
         recursos
       ) do
     case Recursos.registrar_entrada(
-           recursos, codigo, ubicacion, cantidad, descripcion
+           recursos,
+           codigo,
+           ubicacion,
+           cantidad,
+           descripcion
          ) do
       {:ok, nuevos_recursos} ->
         {:reply, {:ok, nuevos_recursos}, nuevos_recursos}
@@ -153,7 +157,11 @@ defmodule RecursosServer do
         recursos
       ) do
     case Recursos.registrar_salida(
-           recursos, codigo, ubicacion, cantidad, descripcion
+           recursos,
+           codigo,
+           ubicacion,
+           cantidad,
+           descripcion
          ) do
       {:ok, nuevos_recursos} ->
         {:reply, {:ok, nuevos_recursos}, nuevos_recursos}
@@ -171,7 +179,11 @@ defmodule RecursosServer do
         recursos
       ) do
     case Recursos.transferir_recurso(
-           recursos, codigo, origen, destino, cantidad
+           recursos,
+           codigo,
+           origen,
+           destino,
+           cantidad
          ) do
       {:ok, nuevos_recursos} ->
         {:reply, {:ok, nuevos_recursos}, nuevos_recursos}
