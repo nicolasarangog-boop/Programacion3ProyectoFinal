@@ -108,19 +108,20 @@ defmodule Recursos do
   ## Parametros
   - Recursos: Lista de recursos registrados.
   - Codigo: Codigo identificador del recurso que se desea buscar.
+  - Ubicacion: Ubicacion del recurso que se desea buscar.
 
   ## Ejemplo
-  iex> Recursos.buscar_recurso(recursos, "REC-001")
+  iex> Recursos.buscar_recurso(recursos, "REC-001", "Centro")
   {:ok, recurso_encontrado}
   """
-  def buscar_recurso(recursos, codigo) do
+  def buscar_recurso(recursos, codigo, ubicacion) do
 
     recurso = Enum.find(recursos, fn r ->
-      r.codigo == codigo
+      r.codigo == codigo and r.ubicacion == ubicacion
     end)
 
     if recurso == nil do
-      {:error, "El recurso no existe"}
+      {:error, "El recurso no existe en esa ubicación"}
     else
       {:ok, recurso}
     end
@@ -156,128 +157,100 @@ defmodule Recursos do
     {:ok, recursos_encontrados}
   end
 
-  @doc """
-  Funcion para registrar una entrada de recursos al inventario.
+@doc """
+Registra una entrada de recursos en una ubicación.
+- Recursos: lista de recursos.
+- Codigo: código identificador.
+- Ubicacion: centro o albergue.
+- Cantidad: unidades que ingresan.
+- Descripcion: motivo de la entrada.
+"""
+def registrar_entrada(recursos, codigo, ubicacion, cantidad, descripcion) do
+  case buscar_recurso(recursos, codigo, ubicacion) do
+    {:error, motivo} ->
+      {:error, motivo}
 
-  ## Parametros
-  - Recursos: Lista de recursos registrados.
-  - Codigo: Codigo identificador del recurso.
-  - Cantidad: Cantidad de unidades que ingresan al inventario.
-  - Descripcion: Motivo o descripcion de la entrada.
+    {:ok, _recurso} ->
+      cond do
+        not is_integer(cantidad) or cantidad <= 0 ->
+          {:error, "La cantidad debe ser mayor que cero"}
 
-  ## Ejemplo
-  iex> Recursos.registrar_entrada(recursos, "REC-001", 20, "Nueva donacion")
-  {:ok, recursos_actualizados}
-  """
-  def registrar_entrada(recursos, codigo, cantidad, descripcion) do
+        not is_binary(descripcion) or descripcion == "" ->
+          {:error, "La descripción no es válida"}
 
-    recurso = Enum.find(recursos, fn r ->
-      r.codigo == codigo
-    end)
+        true ->
+          movimiento = %{
+            tipo: :entrada,
+            cantidad: cantidad,
+            descripcion: descripcion,
+            fecha: DateTime.utc_now()
+          }
 
-    cond do
-      recurso == nil ->
-        {:error, "El recurso no existe"}
-
-      not is_integer(cantidad) or cantidad <= 0 ->
-        {:error, "La cantidad debe ser mayor que cero"}
-
-      not is_binary(descripcion) or descripcion == "" ->
-        {:error, "La descripción no es válida"}
-
-      true ->
-
-        movimiento = %{
-          tipo: :entrada,
-          cantidad: cantidad,
-          descripcion: descripcion,
-          fecha: DateTime.utc_now()
-        }
-
-        recursos_actualizados = Enum.map(
-          recursos,
-          fn r ->
-
-            if r.codigo == codigo do
+          recursos_actualizados = Enum.map(recursos, fn r ->
+            if r.codigo == codigo and r.ubicacion == ubicacion do
               %{
                 r |
-                cantidad_disponible:
-                  r.cantidad_disponible + cantidad,
+                cantidad_disponible: r.cantidad_disponible + cantidad,
                 historial: [movimiento | r.historial]
               }
             else
               r
             end
+          end)
 
-          end
-        )
-
-        {:ok, recursos_actualizados}
-    end
+          {:ok, recursos_actualizados}
+      end
   end
+end
 
 @doc """
-  Funcion para registrar una salida de recursos del inventario.
+Registra una salida de recursos de una ubicación.
+- Recursos: lista de recursos.
+- Codigo: código identificador.
+- Ubicacion: centro o albergue.
+- Cantidad: unidades que salen.
+- Descripcion: motivo de la salida.
+"""
+def registrar_salida(recursos, codigo, ubicacion, cantidad, descripcion) do
+  case buscar_recurso(recursos, codigo, ubicacion) do
+    {:error, motivo} ->
+      {:error, motivo}
 
-  ## Parametros
-  - Recursos: Lista de recursos registrados.
-  - Codigo: Codigo identificador del recurso.
-  - Cantidad: Cantidad de unidades que salen del inventario.
-  - Descripcion: Motivo o descripcion de la salida.
+    {:ok, recurso} ->
+      cond do
+        not is_integer(cantidad) or cantidad <= 0 ->
+          {:error, "La cantidad debe ser mayor que cero"}
 
-  ## Ejemplo
-  iex> Recursos.registrar_salida(recursos, "REC-001", 10, "Entrega a familias")
-  {:ok, recursos_actualizados}
-  """
-  def registrar_salida(recursos, codigo, cantidad, descripcion) do
+        not is_binary(descripcion) or descripcion == "" ->
+          {:error, "La descripción no es válida"}
 
-    recurso = Enum.find(recursos, fn r ->
-      r.codigo == codigo
-    end)
+        cantidad > recurso.cantidad_disponible ->
+          {:error, "No hay suficientes recursos disponibles"}
 
-    cond do
-      recurso == nil ->
-        {:error, "El recurso no existe"}
+        true ->
+          movimiento = %{
+            tipo: :salida,
+            cantidad: cantidad,
+            descripcion: descripcion,
+            fecha: DateTime.utc_now()
+          }
 
-      not is_integer(cantidad) or cantidad <= 0 ->
-        {:error, "La cantidad debe ser mayor que cero"}
-
-      not is_binary(descripcion) or descripcion == "" ->
-        {:error, "La descripción no es válida"}
-
-      cantidad > recurso.cantidad_disponible ->
-        {:error, "No hay suficientes recursos disponibles"}
-
-      true ->
-
-        movimiento = %{
-          tipo: :salida,
-          cantidad: cantidad,
-          descripcion: descripcion,
-          fecha: DateTime.utc_now()
-        }
-
-        recursos_actualizados = Enum.map(
-          recursos,
-          fn r ->
-
-            if r.codigo == codigo do
+          recursos_actualizados = Enum.map(recursos, fn r ->
+            if r.codigo == codigo and r.ubicacion == ubicacion do
               %{
                 r |
-                cantidad_disponible:
-                  r.cantidad_disponible - cantidad,
+                cantidad_disponible: r.cantidad_disponible - cantidad,
                 historial: [movimiento | r.historial]
               }
             else
               r
             end
+          end)
 
-          end
-        )
-
-        {:ok, recursos_actualizados}
-    end
+          {:ok, recursos_actualizados}
+      end
   end
+end
 
   @doc """
   Función para transferir recursos entre dos centros de almacenamiento.
@@ -399,26 +372,20 @@ defmodule Recursos do
 
 
   @doc """
-  Función para consultar el historial de movimientos de un recurso.
+Consulta los movimientos de un recurso en una ubicación.
+- Recursos: lista de recursos.
+- Codigo: código identificador.
+- Ubicacion: centro o albergue.
+"""
+def consultar_historial(recursos, codigo, ubicacion) do
+  case buscar_recurso(recursos, codigo, ubicacion) do
+    {:ok, recurso} ->
+      {:ok, recurso.historial}
 
-  ## Parametros
-  - Recursos: Lista de recursos registrados.
-  - Codigo: Codigo identificador del recurso.
-
-  ## Ejemplo
-  iex> Recursos.consultar_historial(recursos, "REC-001")
-  {:ok, historial_del_recurso}
-  """
-  def consultar_historial(recursos, codigo) do
-
-    case buscar_recurso(recursos, codigo) do
-      {:ok, recurso} ->
-        {:ok, recurso.historial}
-
-      {:error, motivo} ->
-        {:error, motivo}
-    end
+    {:error, motivo} ->
+      {:error, motivo}
   end
+end
 
   @doc """
   Funcion para identificar los recursos que tienen una cantidad
