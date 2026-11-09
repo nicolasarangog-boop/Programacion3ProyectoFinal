@@ -7,7 +7,7 @@ defmodule Necesidades do
   Autores:
   - Briyith Sanchez Alonso
   - Nicolás Arango Gutiérrez
-  Fecha: Octubre de 2026
+  Fecha: Noviembre del 2026
   Licencia: GNU GPL V3
   """
   @tipos_permitidos [
