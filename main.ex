@@ -1,4 +1,3 @@
-
 # Carga de los módulos funcionales
 Code.require_file("Usuarios.exs", __DIR__)
 Code.require_file("Zonas.exs", __DIR__)
@@ -34,6 +33,7 @@ defmodule Main do
         IO.puts("Sistema iniciado correctamente.")
         Process.put(:zonas, [])
         Process.put(:necesidades, [])
+        Process.put(:personas, [])
         IO.puts("Supervisor: #{inspect(pid)}")
         mostrar_ayuda()
         bucle()
@@ -114,9 +114,7 @@ defmodule Main do
           bucle()
 
         ["show_zone", nombre] ->
-          mostrar_resultado(
-            Zonas.consultar_zona(Process.get(:zonas, []), nombre)
-          )
+          mostrar_resultado(Zonas.consultar_zona(Process.get(:zonas, []), nombre))
           bucle()
 
         ["update_zone_level", nombre, nivel] ->
@@ -128,12 +126,14 @@ defmodule Main do
             Zonas.recorrer_jerarquia(Process.get(:zonas, [])),
             pretty: true
           )
+
           bucle()
 
         ["affected_people"] ->
           IO.puts(
             "Personas afectadas: #{Zonas.calcular_personas_afectadas(Process.get(:zonas, []))}"
           )
+
           bucle()
 
         ["register_need", tipo, cantidad, prioridad, zona, descripcion, responsable] ->
@@ -141,9 +141,7 @@ defmodule Main do
           bucle()
 
         ["list_needs"] ->
-          mostrar_resultado(
-            Necesidades.listar_necesidades(Process.get(:necesidades, []))
-          )
+          mostrar_resultado(Necesidades.listar_necesidades(Process.get(:necesidades, [])))
           bucle()
 
         ["list_needs" | filtros] ->
@@ -151,15 +149,11 @@ defmodule Main do
           bucle()
 
         ["sort_needs"] ->
-          mostrar_resultado(
-            Necesidades.ordenar_prioridad(Process.get(:necesidades, []))
-          )
+          mostrar_resultado(Necesidades.ordenar_prioridad(Process.get(:necesidades, [])))
           bucle()
 
         ["pending_needs"] ->
-          mostrar_resultado(
-            Necesidades.listar_pendientes(Process.get(:necesidades, []))
-          )
+          mostrar_resultado(Necesidades.listar_pendientes(Process.get(:necesidades, [])))
           bucle()
 
         ["update_need_status", identificador, estado] ->
@@ -167,12 +161,9 @@ defmodule Main do
           bucle()
 
         ["needs_summary"] ->
-          mostrar_resultado(
-            Necesidades.contar_estado(Process.get(:necesidades, []))
-          )
+          mostrar_resultado(Necesidades.contar_estado(Process.get(:necesidades, [])))
           bucle()
 
-                  # Comandos de recursos
         ["register_resource", nombre, categoria, cantidad, unidad, ubicacion] ->
           registrar_recurso(nombre, categoria, cantidad, unidad, ubicacion)
           bucle()
@@ -195,6 +186,26 @@ defmodule Main do
 
         ["critical_resources", limite] ->
           consultar_recursos_bajos(limite)
+          bucle()
+
+        ["register_person", id, nombre, documento, edad, zona, estado] ->
+          registrar_persona(id, nombre, documento, edad, zona, estado)
+          bucle()
+
+        ["list_persons"] ->
+          mostrar_resultado(Personas.listar(Process.get(:personas, [])))
+          bucle()
+
+        ["find_person", id] ->
+          mostrar_resultado(Personas.buscar(Process.get(:personas, []), id))
+          bucle()
+
+        ["update_person_status", id, estado] ->
+          actualizar_estado_persona(id, estado)
+          bucle()
+
+        ["person_history", id] ->
+          mostrar_resultado(Personas.consultar_historial(Process.get(:personas, []), id))
           bucle()
 
         _ ->
@@ -284,25 +295,23 @@ defmodule Main do
     IO.inspect(resultado, pretty: true, limit: :infinity)
   end
 
-
   # Registra una zona nueva.
   defp registrar_zona(nombre, nivel, personas) do
     with {:ok, nivel_atom} <- convertir_nivel(nivel),
          {cantidad, ""} <- Integer.parse(personas) do
-
       datos = %{
         nombre: nombre,
         nivel: nivel_atom,
         personas_afectadas: cantidad
       }
 
-      resultado = Zonas.registrar_zona(
-        Process.get(:zonas, []),
-        datos
-      )
+      resultado =
+        Zonas.registrar_zona(
+          Process.get(:zonas, []),
+          datos
+        )
 
       guardar_zonas(resultado)
-
     else
       :error ->
         IO.puts("Nivel inválido. Usa: critico, alto, medio o bajo.")
@@ -319,21 +328,20 @@ defmodule Main do
   defp registrar_sector(nombre_zona, nombre_sector, nivel, personas) do
     with {:ok, nivel_atom} <- convertir_nivel(nivel),
          {cantidad, ""} <- Integer.parse(personas) do
-
       datos = %{
         nombre: nombre_sector,
         nivel: nivel_atom,
         personas_afectadas: cantidad
       }
 
-      resultado = Zonas.registrar_sector(
-        Process.get(:zonas, []),
-        nombre_zona,
-        datos
-      )
+      resultado =
+        Zonas.registrar_sector(
+          Process.get(:zonas, []),
+          nombre_zona,
+          datos
+        )
 
       guardar_zonas(resultado)
-
     else
       _ ->
         IO.puts("Verifica el nivel y la cantidad de personas.")
@@ -349,12 +357,13 @@ defmodule Main do
           personas_afectadas: cantidad
         }
 
-        resultado = Zonas.registrar_punto_atencion(
-          Process.get(:zonas, []),
-          nombre_zona,
-          nombre_sector,
-          datos
-        )
+        resultado =
+          Zonas.registrar_punto_atencion(
+            Process.get(:zonas, []),
+            nombre_zona,
+            nombre_sector,
+            datos
+          )
 
         guardar_zonas(resultado)
 
@@ -367,11 +376,12 @@ defmodule Main do
   defp actualizar_nivel_zona(nombre, nivel) do
     case convertir_nivel(nivel) do
       {:ok, nivel_atom} ->
-        resultado = Zonas.actualizar_nivel(
-          Process.get(:zonas, []),
-          nombre,
-          nivel_atom
-        )
+        resultado =
+          Zonas.actualizar_nivel(
+            Process.get(:zonas, []),
+            nombre,
+            nivel_atom
+          )
 
         guardar_zonas(resultado)
 
@@ -397,12 +407,11 @@ defmodule Main do
     IO.puts("Error: #{mensaje}")
   end
 
-    # Registra una nueva necesidad.
+  # Registra una nueva necesidad.
   defp registrar_necesidad(tipo, cantidad, prioridad, zona, descripcion, responsable) do
     with {:ok, tipo_atom} <- convertir_tipo_necesidad(tipo),
          {:ok, prioridad_atom} <- convertir_prioridad(prioridad),
          {cantidad_numero, ""} <- Integer.parse(cantidad) do
-
       datos = %{
         tipo: tipo_atom,
         descripcion: descripcion,
@@ -412,13 +421,13 @@ defmodule Main do
         responsable: responsable
       }
 
-      resultado = Necesidades.registrar_necesidad(
-        Process.get(:necesidades, []),
-        datos
-      )
+      resultado =
+        Necesidades.registrar_necesidad(
+          Process.get(:necesidades, []),
+          datos
+        )
 
       guardar_necesidades(resultado)
-
     else
       :error ->
         IO.puts("Tipo o prioridad inválidos.")
@@ -457,10 +466,11 @@ defmodule Main do
   # Consulta necesidades utilizando los filtros ingresados.
   defp consultar_necesidades(argumentos) do
     with {:ok, filtros} <- convertir_filtros_necesidad(argumentos) do
-      resultado = Necesidades.consultar_necesidades(
-        Process.get(:necesidades, []),
-        filtros
-      )
+      resultado =
+        Necesidades.consultar_necesidades(
+          Process.get(:necesidades, []),
+          filtros
+        )
 
       mostrar_resultado(resultado)
     else
@@ -513,11 +523,12 @@ defmodule Main do
   defp actualizar_estado_necesidad(identificador, estado) do
     case convertir_estado_necesidad(estado) do
       {:ok, estado_atom} ->
-        resultado = Necesidades.actualizar_estado(
-          Process.get(:necesidades, []),
-          identificador,
-          estado_atom
-        )
+        resultado =
+          Necesidades.actualizar_estado(
+            Process.get(:necesidades, []),
+            identificador,
+            estado_atom
+          )
 
         guardar_necesidades(resultado)
 
@@ -537,7 +548,7 @@ defmodule Main do
     IO.puts("Error: #{mensaje}")
   end
 
-    # Registra un recurso en el inventario.
+  # Registra un recurso en el inventario.
   defp registrar_recurso(nombre, categoria, cantidad, unidad, ubicacion) do
     case Integer.parse(cantidad) do
       {cantidad_numero, ""} ->
@@ -579,7 +590,6 @@ defmodule Main do
              codigo,
              cantidad_numero
            ) do
-
       Process.put(:necesidades, necesidades_actualizadas)
 
       IO.puts("Recurso asignado correctamente.")
@@ -587,7 +597,6 @@ defmodule Main do
       IO.puts("Recurso: #{codigo}")
       IO.puts("Cantidad asignada: #{cantidad_numero}")
       IO.puts("Ubicación de origen: #{ubicacion}")
-
     else
       :error ->
         IO.puts("La cantidad debe ser un número entero.")
@@ -613,12 +622,13 @@ defmodule Main do
   defp transferir_recurso(codigo, origen, destino, cantidad) do
     case Integer.parse(cantidad) do
       {cantidad_numero, ""} ->
-        resultado = RecursosServer.transferir(
-          codigo,
-          origen,
-          destino,
-          cantidad_numero
-        )
+        resultado =
+          RecursosServer.transferir(
+            codigo,
+            origen,
+            destino,
+            cantidad_numero
+          )
 
         mostrar_resultado(resultado)
 
@@ -636,6 +646,88 @@ defmodule Main do
       _ ->
         IO.puts("El límite debe ser un número entero.")
     end
+  end
+
+  # Registra una persona afectada.
+  defp registrar_persona(id, nombre, documento, edad, zona, estado) do
+    with {edad_numero, ""} <- Integer.parse(edad),
+         {:ok, estado_texto} <- convertir_estado_persona(estado) do
+      datos = %{
+        id: id,
+        nombre: nombre,
+        documento: documento,
+        edad: edad_numero,
+        zona: zona,
+        estado: estado_texto
+      }
+
+      resultado =
+        Personas.registrar(
+          Process.get(:personas, []),
+          datos
+        )
+
+      guardar_personas(resultado)
+    else
+      :error ->
+        IO.puts("Estado inválido.")
+
+      _ ->
+        IO.puts("La edad debe ser un número entero.")
+    end
+  end
+
+  # Convierte el estado ingresado en un texto permitido.
+  defp convertir_estado_persona("sin_informacion"),
+    do: {:ok, "sin información"}
+
+  defp convertir_estado_persona("reportada"),
+    do: {:ok, "reportada"}
+
+  defp convertir_estado_persona("localizada"),
+    do: {:ok, "localizada"}
+
+  defp convertir_estado_persona("trasladada"),
+    do: {:ok, "trasladada"}
+
+  defp convertir_estado_persona("en_albergue"),
+    do: {:ok, "en albergue"}
+
+  defp convertir_estado_persona("reunificada"),
+    do: {:ok, "reunificada"}
+
+  defp convertir_estado_persona(_estado), do: :error
+
+  # Actualiza el estado de una persona afectada.
+  defp actualizar_estado_persona(id, estado) do
+    case convertir_estado_persona(estado) do
+      {:ok, estado_texto} ->
+        resultado =
+          Personas.actualizar_estado(
+            Process.get(:personas, []),
+            id,
+            estado_texto
+          )
+
+        guardar_personas(resultado)
+
+      :error ->
+        IO.puts("Estado inválido.")
+
+        IO.puts(
+          "Estados: sin_informacion, reportada, localizada, trasladada, en_albergue, reunificada."
+        )
+    end
+  end
+
+  # Actualiza la lista de personas cuando una operación tiene éxito.
+  defp guardar_personas({:ok, personas}) do
+    Process.put(:personas, personas)
+    mostrar_resultado({:ok, personas})
+  end
+
+  defp guardar_personas({:error, mensaje}) do
+    IO.puts("Error: #{mensaje}")
   end
 
   # Muestra los comandos disponibles.
@@ -656,7 +748,7 @@ defmodule Main do
     IO.puts("  zone_hierarchy")
     IO.puts("  affected_people")
 
-        IO.puts("\nComandos de necesidades:")
+    IO.puts("\nComandos de necesidades:")
     IO.puts("  register_need tipo cantidad prioridad zona descripcion responsable")
     IO.puts("  list_needs")
     IO.puts("  list_needs zona=Centro")
@@ -672,13 +764,24 @@ defmodule Main do
     IO.puts("  agua, alimentos, medicamentos, primeros_auxilios")
     IO.puts("  refugio, transporte, rescate, otra")
 
-        IO.puts("\nComandos de recursos:")
+    IO.puts("\nComandos de recursos:")
     IO.puts("  register_resource nombre categoria cantidad unidad ubicacion")
     IO.puts("  list_resources")
     IO.puts("  assign_resource NEC-001 REC-001 Centro 20")
     IO.puts("  transfer_resource REC-001 Centro Norte 30")
     IO.puts("  resource_history REC-001 Centro")
     IO.puts("  critical_resources limite")
+
+    IO.puts("\nComandos de personas:")
+    IO.puts("  register_person ID nombre documento edad zona estado")
+    IO.puts("  list_persons")
+    IO.puts("  find_person ID")
+    IO.puts("  update_person_status ID estado")
+    IO.puts("  person_history ID")
+
+    IO.puts("\nEstados de personas:")
+    IO.puts("  sin_informacion, reportada, localizada")
+    IO.puts("  trasladada, en_albergue, reunificada")
 
     IO.puts("\nPrioridades:")
     IO.puts("  critica, alta, media, baja")
@@ -695,7 +798,6 @@ defmodule Main do
 
     IO.puts("\nUsa comillas dobles para nombres con espacios.")
   end
-
 end
 
 Main.iniciar()
