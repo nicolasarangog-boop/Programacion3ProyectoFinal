@@ -35,6 +35,7 @@ defmodule Main do
         Process.put(:necesidades, [])
         Process.put(:personas, [])
         Process.put(:mensajes, [])
+        Process.put(:mascotas, [])
         IO.puts("Supervisor: #{inspect(pid)}")
         mostrar_ayuda()
         bucle()
@@ -235,6 +236,49 @@ defmodule Main do
 
         ["update_message_status", id, estado] ->
           actualizar_estado_mensaje(id, estado)
+          bucle()
+
+        # Comandos de mascotas
+        [
+          "register_pet",
+          id,
+          tipo,
+          especie,
+          nombre,
+          caracteristicas,
+          color,
+          tamanio,
+          zona,
+          contacto
+        ] ->
+          registrar_mascota(
+            id,
+            tipo,
+            especie,
+            nombre,
+            caracteristicas,
+            color,
+            tamanio,
+            zona,
+            contacto
+          )
+
+          bucle()
+
+        ["list_pets"] ->
+          mostrar_resultado(Mascotas.listar(Process.get(:mascotas, [])))
+          bucle()
+
+        ["find_pet", id] ->
+          mostrar_resultado(Mascotas.buscar(Process.get(:mascotas, []), id))
+          bucle()
+
+        ["match_pets", id] ->
+          buscar_coincidencias_mascota(id)
+          bucle()
+
+        ["confirm_pet_match", id1, id2] ->
+          confirmar_coincidencia_mascota(id1, id2)
           bucle()
 
         _ ->
@@ -800,6 +844,99 @@ defmodule Main do
     IO.puts("Error: #{mensaje}")
   end
 
+  # Registra un reporte de mascota perdida o encontrada.
+  defp registrar_mascota(
+         id,
+         tipo,
+         especie,
+         nombre,
+         caracteristicas,
+         color,
+         tamanio,
+         zona,
+         contacto
+       ) do
+    case convertir_tipo_mascota(tipo) do
+      {:ok, tipo_texto} ->
+        datos = %{
+          id: id,
+          tipo: tipo_texto,
+          especie: especie,
+          nombre: nombre,
+          caracteristicas: caracteristicas,
+          color: color,
+          tamanio: tamanio,
+          zona: zona,
+          contacto: contacto
+        }
+
+        resultado =
+          Mascotas.registrar(
+            Process.get(:mascotas, []),
+            datos
+          )
+
+        guardar_mascotas(resultado)
+
+      :error ->
+        IO.puts("Tipo de reporte inválido.")
+        IO.puts("Tipos permitidos: perdida, encontrada.")
+    end
+  end
+
+  # Convierte el tipo de reporte en un valor permitido.
+  defp convertir_tipo_mascota("perdida"), do: {:ok, "perdida"}
+  defp convertir_tipo_mascota("encontrada"), do: {:ok, "encontrada"}
+  defp convertir_tipo_mascota(_tipo), do: :error
+
+  # Busca posibles coincidencias para un reporte.
+  defp buscar_coincidencias_mascota(id) do
+    resultado =
+      Mascotas.buscar_coincidencias(
+        Process.get(:mascotas, []),
+        id
+      )
+
+    case resultado do
+      {:ok, nuevos_reportes, coincidencias} ->
+        Process.put(:mascotas, nuevos_reportes)
+
+        IO.puts("Búsqueda de coincidencias completada.")
+
+        if coincidencias == [] do
+          IO.puts("No se encontraron posibles coincidencias.")
+        else
+          IO.puts("Posibles coincidencias encontradas:")
+          mostrar_resultado(coincidencias)
+        end
+
+      {:error, mensaje} ->
+        IO.puts("Error: #{mensaje}")
+    end
+  end
+
+  # Confirma la coincidencia entre dos reportes.
+  defp confirmar_coincidencia_mascota(id1, id2) do
+    resultado =
+      Mascotas.confirmar_coincidencia(
+        Process.get(:mascotas, []),
+        id1,
+        id2
+      )
+
+    guardar_mascotas(resultado)
+  end
+
+  # Actualiza la lista de reportes cuando una operación tiene éxito.
+  defp guardar_mascotas({:ok, reportes}) do
+    Process.put(:mascotas, reportes)
+    mostrar_resultado({:ok, reportes})
+  end
+
+  defp guardar_mascotas({:error, mensaje}) do
+    IO.puts("Error: #{mensaje}")
+  end
+
   # Muestra los comandos disponibles.
   defp mostrar_ayuda do
     IO.puts("\nComandos de usuarios:")
@@ -862,6 +999,19 @@ defmodule Main do
 
     IO.puts("\nEstados de mensajes:")
     IO.puts("  pendiente, enviado, entregado, leido")
+
+    IO.puts("\nComandos de mascotas:")
+    IO.puts("  register_pet ID tipo especie nombre caracteristicas color tamanio zona contacto")
+    IO.puts("  list_pets")
+    IO.puts("  find_pet ID")
+    IO.puts("  match_pets ID")
+    IO.puts("  confirm_pet_match ID1 ID2")
+
+    IO.puts("\nTipos de reportes:")
+    IO.puts("  perdida, encontrada")
+
+    IO.puts("\nEstados de reportes:")
+    IO.puts("  activa, posible coincidencia, resuelta")
 
     IO.puts("\nPrioridades:")
     IO.puts("  critica, alta, media, baja")
