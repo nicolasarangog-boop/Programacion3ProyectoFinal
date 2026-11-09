@@ -34,6 +34,7 @@ defmodule Main do
         Process.put(:zonas, [])
         Process.put(:necesidades, [])
         Process.put(:personas, [])
+        Process.put(:mensajes, [])
         IO.puts("Supervisor: #{inspect(pid)}")
         mostrar_ayuda()
         bucle()
@@ -206,6 +207,34 @@ defmodule Main do
 
         ["person_history", id] ->
           mostrar_resultado(Personas.consultar_historial(Process.get(:personas, []), id))
+          bucle()
+
+        # Comandos de mensajes
+        ["register_message", id, remitente, destinatario, contenido] ->
+          registrar_mensaje(id, remitente, destinatario, contenido)
+          bucle()
+
+        ["list_messages"] ->
+          mostrar_resultado(Mensajes.listar(Process.get(:mensajes, [])))
+          bucle()
+
+        ["find_message", id] ->
+          mostrar_resultado(Mensajes.buscar(Process.get(:mensajes, []), id))
+          bucle()
+
+        ["messages_by_person", persona_id] ->
+          mostrar_resultado(
+            Mensajes.mensajes_por_persona(
+              Process.get(:mensajes, []),
+              Process.get(:personas, []),
+              persona_id
+            )
+          )
+
+          bucle()
+
+        ["update_message_status", id, estado] ->
+          actualizar_estado_mensaje(id, estado)
           bucle()
 
         _ ->
@@ -730,6 +759,47 @@ defmodule Main do
     IO.puts("Error: #{mensaje}")
   end
 
+  # Registra un mensaje entre dos personas.
+  defp registrar_mensaje(id, remitente, destinatario, contenido) do
+    datos = %{
+      id: id,
+      remitente: remitente,
+      destinatario: destinatario,
+      contenido: contenido
+    }
+
+    resultado =
+      Mensajes.registrar(
+        Process.get(:mensajes, []),
+        Process.get(:personas, []),
+        datos
+      )
+
+    guardar_mensajes(resultado)
+  end
+
+  # Actualiza el estado de un mensaje.
+  defp actualizar_estado_mensaje(id, estado) do
+    resultado =
+      Mensajes.actualizar_estado(
+        Process.get(:mensajes, []),
+        id,
+        estado
+      )
+
+    guardar_mensajes(resultado)
+  end
+
+  # Actualiza la lista de mensajes cuando una operación tiene éxito.
+  defp guardar_mensajes({:ok, mensajes}) do
+    Process.put(:mensajes, mensajes)
+    mostrar_resultado({:ok, mensajes})
+  end
+
+  defp guardar_mensajes({:error, mensaje}) do
+    IO.puts("Error: #{mensaje}")
+  end
+
   # Muestra los comandos disponibles.
   defp mostrar_ayuda do
     IO.puts("\nComandos de usuarios:")
@@ -782,6 +852,16 @@ defmodule Main do
     IO.puts("\nEstados de personas:")
     IO.puts("  sin_informacion, reportada, localizada")
     IO.puts("  trasladada, en_albergue, reunificada")
+
+    IO.puts("\nComandos de mensajes:")
+    IO.puts("  register_message ID remitente destinatario \"contenido\"")
+    IO.puts("  list_messages")
+    IO.puts("  find_message ID")
+    IO.puts("  messages_by_person ID_PERSONA")
+    IO.puts("  update_message_status ID estado")
+
+    IO.puts("\nEstados de mensajes:")
+    IO.puts("  pendiente, enviado, entregado, leido")
 
     IO.puts("\nPrioridades:")
     IO.puts("  critica, alta, media, baja")
