@@ -2,6 +2,10 @@ defmodule UsuariosServer do
   @moduledoc """
   Gestiona los usuarios y sus sesiones mediante un proceso GenServer.
   Mantiene el estado de los usuarios conectados y registrados.
+
+  - Autores: Briyith Sanchez Alonso y Nicolas Arango Gutierrez
+  - Fecha: Noviembre del 2026
+  - Licencia: GNU GPL V3
   """
 
   use GenServer

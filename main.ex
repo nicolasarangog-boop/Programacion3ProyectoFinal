@@ -18,6 +18,10 @@ defmodule Main do
   @moduledoc """
   Punto de entrada e interfaz de comandos del sistema
   distribuido de coordinación y gestión de emergencias.
+
+  - Autores: Briyith Sanchez Alonso y Nicolas Arango Gutierrez
+  - Fecha: Octubre del 2026
+  - Licencia: GNU GPL V3
   """
 
   @doc """
@@ -84,6 +88,7 @@ defmodule Main do
           mostrar_ayuda()
           bucle()
 
+        #Comandos Usuario
         ["register_user", usuario, contrasena, nombre, tipo, zona] ->
           registrar_usuario(usuario, contrasena, nombre, tipo, zona)
           bucle()
@@ -100,6 +105,7 @@ defmodule Main do
           mostrar_resultado(UsuariosServer.listar())
           bucle()
 
+        #Comandos Zonas
         ["register_zone", nombre, nivel, personas] ->
           registrar_zona(nombre, nivel, personas)
           bucle()
@@ -139,6 +145,7 @@ defmodule Main do
 
           bucle()
 
+        #Comandos Necesidades
         ["register_need", tipo, cantidad, prioridad, zona, descripcion, responsable] ->
           registrar_necesidad(tipo, cantidad, prioridad, zona, descripcion, responsable)
           bucle()
@@ -167,6 +174,7 @@ defmodule Main do
           mostrar_resultado(Necesidades.contar_estado(Process.get(:necesidades, [])))
           bucle()
 
+        #Comandos Recursos
         ["register_resource", nombre, categoria, cantidad, unidad, ubicacion] ->
           registrar_recurso(nombre, categoria, cantidad, unidad, ubicacion)
           bucle()
@@ -1097,12 +1105,14 @@ defmodule Main do
 
   # Muestra los comandos disponibles.
   defp mostrar_ayuda do
+    #Comandos de usuarios
     IO.puts("\nComandos de usuarios:")
     IO.puts("  register_user usuario contraseña nombre tipo zona")
     IO.puts("  connect usuario contraseña tipo zona")
     IO.puts("  disconnect")
     IO.puts("  list_users")
 
+    #Comandos de zonas
     IO.puts("\nComandos de zonas:")
     IO.puts("  register_zone nombre nivel personas")
     IO.puts("  list_zones")
@@ -1112,7 +1122,10 @@ defmodule Main do
     IO.puts("  update_zone_level nombre nivel")
     IO.puts("  zone_hierarchy")
     IO.puts("  affected_people")
+    IO.puts("\nNiveles permitidos:")
+    IO.puts("  critico, alto, medio, bajo")
 
+    #Comandos de necesidades
     IO.puts("\nComandos de necesidades:")
     IO.puts("  register_need tipo cantidad prioridad zona descripcion responsable")
     IO.puts("  list_needs")
@@ -1128,7 +1141,13 @@ defmodule Main do
     IO.puts("\nTipos de necesidades:")
     IO.puts("  agua, alimentos, medicamentos, primeros_auxilios")
     IO.puts("  refugio, transporte, rescate, otra")
+    IO.puts("\nPrioridades:")
+    IO.puts("  critica, alta, media, baja")
 
+    IO.puts("\nEstados:")
+    IO.puts("  pendiente, asignada, en_atencion, atendida, cancelada")
+
+    #Comandos de recursos
     IO.puts("\nComandos de recursos:")
     IO.puts("  register_resource nombre categoria cantidad unidad ubicacion")
     IO.puts("  list_resources")
@@ -1137,6 +1156,7 @@ defmodule Main do
     IO.puts("  resource_history REC-001 Centro")
     IO.puts("  critical_resources limite")
 
+    #Comandos de personas
     IO.puts("\nComandos de personas:")
     IO.puts("  register_person ID nombre documento edad zona estado")
     IO.puts("  list_persons")
@@ -1148,6 +1168,7 @@ defmodule Main do
     IO.puts("  sin_informacion, reportada, localizada")
     IO.puts("  trasladada, en_albergue, reunificada")
 
+    #Comandos de mensajes
     IO.puts("\nComandos de mensajes:")
     IO.puts("  register_message ID remitente destinatario \"contenido\"")
     IO.puts("  list_messages")
@@ -1158,6 +1179,7 @@ defmodule Main do
     IO.puts("\nEstados de mensajes:")
     IO.puts("  pendiente, enviado, entregado, leido")
 
+    #Comandos de mascotas
     IO.puts("\nComandos de mascotas:")
     IO.puts("  register_pet ID tipo especie nombre caracteristicas color tamanio zona contacto")
     IO.puts("  list_pets")
@@ -1171,6 +1193,7 @@ defmodule Main do
     IO.puts("\nEstados de reportes:")
     IO.puts("  activa, posible coincidencia, resuelta")
 
+    #Comandos de albergues
     IO.puts("\nComandos de albergues:")
     IO.puts("  register_shelter CODIGO nombre zona capacidad")
     IO.puts("  list_shelters")
@@ -1183,15 +1206,7 @@ defmodule Main do
     IO.puts("  associate_shelter_resource CODIGO ID_RECURSO")
     IO.puts("  associate_shelter_need CODIGO ID_NECESIDAD")
 
-    IO.puts("\nPrioridades:")
-    IO.puts("  critica, alta, media, baja")
-
-    IO.puts("\nEstados:")
-    IO.puts("  pendiente, asignada, en_atencion, atendida, cancelada")
-
-    IO.puts("\nNiveles permitidos:")
-    IO.puts("  critico, alto, medio, bajo")
-
+    #Otros comandos
     IO.puts("\nOtros comandos:")
     IO.puts("  help")
     IO.puts("  exit")

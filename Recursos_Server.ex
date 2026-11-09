@@ -1,10 +1,14 @@
 defmodule RecursosServer do
-  use GenServer
-
   @moduledoc """
   Servidor encargado de administrar concurrentemente
   el inventario de recursos del sistema.
+
+  - Autores: Briyith Sanchez Alonso y Nicolas Arango Gutierrez
+  - Fecha: Octubre del 2026
+  - Licencia: GNU GPL V3
   """
+
+  use GenServer
 
   @doc """
   Inicia el servidor con una lista de recursos.

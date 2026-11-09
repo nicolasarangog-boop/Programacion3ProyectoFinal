@@ -4,7 +4,7 @@ defmodule Zonas do
   de coordinacion y gestion de emergencias.
 
   - Autores: Briyith Sanchez Alonso y Nicolas Arango Gutierrez
-  - Fecha: Octubre del 2026
+  - Fecha: Noviembre del 2026
   - Licencia: GNU GPL V3
   """
 

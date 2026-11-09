@@ -2,6 +2,10 @@ defmodule SistemaSupervisor do
   @moduledoc """
   Supervisa los servidores principales del sistema de gestión
   de emergencias y controla su reinicio cuando ocurre un fallo.
+
+  - Autores: Briyith Sanchez Alonso y Nicolas Arango Gutierrez
+  - Fecha: Noviembre del 2026
+  - Licencia: GNU GPL V3
   """
 
   use Supervisor
