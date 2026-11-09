@@ -36,6 +36,7 @@ defmodule Main do
         Process.put(:personas, [])
         Process.put(:mensajes, [])
         Process.put(:mascotas, [])
+        Process.put(:albergues, [])
         IO.puts("Supervisor: #{inspect(pid)}")
         mostrar_ayuda()
         bucle()
@@ -279,6 +280,59 @@ defmodule Main do
 
         ["confirm_pet_match", id1, id2] ->
           confirmar_coincidencia_mascota(id1, id2)
+          bucle()
+
+        # Comandos de albergues
+        ["register_shelter", codigo, nombre, zona, capacidad] ->
+          registrar_albergue(codigo, nombre, zona, capacidad)
+          bucle()
+
+        ["list_shelters"] ->
+          mostrar_resultado(Albergues.listar(Process.get(:albergues, [])))
+          bucle()
+
+        ["find_shelter", codigo] ->
+          mostrar_resultado(Albergues.buscar(Process.get(:albergues, []), codigo))
+          bucle()
+
+        ["enter_shelter", codigo, id_persona] ->
+          ingresar_persona_albergue(codigo, id_persona)
+          bucle()
+
+        ["leave_shelter", codigo, id_persona] ->
+          retirar_persona_albergue(codigo, id_persona)
+          bucle()
+
+        ["shelter_spaces", codigo] ->
+          mostrar_resultado(
+            Albergues.cupos_disponibles(
+              Process.get(:albergues, []),
+              codigo
+            )
+          )
+
+          bucle()
+
+        ["shelter_occupancy", codigo] ->
+          mostrar_resultado(
+            Albergues.ocupacion(
+              Process.get(:albergues, []),
+              codigo
+            )
+          )
+
+          bucle()
+
+        ["most_occupied_shelter"] ->
+          mostrar_resultado(Albergues.mayor_ocupacion(Process.get(:albergues, [])))
+          bucle()
+
+        ["associate_shelter_resource", codigo, id_recurso] ->
+          asociar_recurso_albergue(codigo, id_recurso)
+          bucle()
+
+        ["associate_shelter_need", codigo, id_necesidad] ->
+          asociar_necesidad_albergue(codigo, id_necesidad)
           bucle()
 
         _ ->
@@ -937,6 +991,110 @@ defmodule Main do
     IO.puts("Error: #{mensaje}")
   end
 
+  # Registra un nuevo albergue.
+  defp registrar_albergue(codigo, nombre, zona, capacidad) do
+    case Integer.parse(capacidad) do
+      {capacidad_entera, ""} ->
+        datos = %{
+          codigo: codigo,
+          nombre: nombre,
+          zona: zona,
+          capacidad: capacidad_entera
+        }
+
+        resultado =
+          Albergues.registrar(
+            Process.get(:albergues, []),
+            datos
+          )
+
+        guardar_albergues(resultado)
+
+      _ ->
+        IO.puts("Error: la capacidad debe ser un número entero.")
+    end
+  end
+
+  # Registra el ingreso de una persona y actualiza su estado.
+  defp ingresar_persona_albergue(codigo, id_persona) do
+    resultado =
+      Albergues.ingresar_persona_integrado(
+        Process.get(:albergues, []),
+        Process.get(:personas, []),
+        codigo,
+        id_persona
+      )
+
+    case resultado do
+      {:ok, nuevos_albergues, nuevas_personas} ->
+        Process.put(:albergues, nuevos_albergues)
+        Process.put(:personas, nuevas_personas)
+
+        IO.puts("Persona ingresada correctamente al albergue.")
+        IO.puts("Estado de la persona actualizado a: en albergue")
+
+      {:error, mensaje} ->
+        IO.puts("Error: #{mensaje}")
+    end
+  end
+
+  # Registra la salida de una persona y actualiza su estado.
+  defp retirar_persona_albergue(codigo, id_persona) do
+    resultado =
+      Albergues.retirar_persona_integrado(
+        Process.get(:albergues, []),
+        Process.get(:personas, []),
+        codigo,
+        id_persona
+      )
+
+    case resultado do
+      {:ok, nuevos_albergues, nuevas_personas} ->
+        Process.put(:albergues, nuevos_albergues)
+        Process.put(:personas, nuevas_personas)
+
+        IO.puts("Persona retirada correctamente del albergue.")
+        IO.puts("Estado de la persona actualizado a: localizada")
+
+      {:error, mensaje} ->
+        IO.puts("Error: #{mensaje}")
+    end
+  end
+
+  # Asocia un recurso con un albergue.
+  defp asociar_recurso_albergue(codigo, id_recurso) do
+    resultado =
+      Albergues.asociar_recurso(
+        Process.get(:albergues, []),
+        codigo,
+        id_recurso
+      )
+
+    guardar_albergues(resultado)
+  end
+
+  # Asocia una necesidad con un albergue.
+  defp asociar_necesidad_albergue(codigo, id_necesidad) do
+    resultado =
+      Albergues.asociar_necesidad(
+        Process.get(:albergues, []),
+        codigo,
+        id_necesidad
+      )
+
+    guardar_albergues(resultado)
+  end
+
+  # Actualiza la lista de albergues cuando una operación tiene éxito.
+  defp guardar_albergues({:ok, albergues}) do
+    Process.put(:albergues, albergues)
+    mostrar_resultado({:ok, albergues})
+  end
+
+  defp guardar_albergues({:error, mensaje}) do
+    IO.puts("Error: #{mensaje}")
+  end
+
   # Muestra los comandos disponibles.
   defp mostrar_ayuda do
     IO.puts("\nComandos de usuarios:")
@@ -1012,6 +1170,18 @@ defmodule Main do
 
     IO.puts("\nEstados de reportes:")
     IO.puts("  activa, posible coincidencia, resuelta")
+
+    IO.puts("\nComandos de albergues:")
+    IO.puts("  register_shelter CODIGO nombre zona capacidad")
+    IO.puts("  list_shelters")
+    IO.puts("  find_shelter CODIGO")
+    IO.puts("  enter_shelter CODIGO ID_PERSONA")
+    IO.puts("  leave_shelter CODIGO ID_PERSONA")
+    IO.puts("  shelter_spaces CODIGO")
+    IO.puts("  shelter_occupancy CODIGO")
+    IO.puts("  most_occupied_shelter")
+    IO.puts("  associate_shelter_resource CODIGO ID_RECURSO")
+    IO.puts("  associate_shelter_need CODIGO ID_NECESIDAD")
 
     IO.puts("\nPrioridades:")
     IO.puts("  critica, alta, media, baja")
