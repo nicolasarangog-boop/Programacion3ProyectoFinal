@@ -4,7 +4,7 @@ defmodule RecursosServer do
   el inventario de recursos del sistema.
 
   - Autores: Briyith Sanchez Alonso y Nicolas Arango Gutierrez
-  - Fecha: Octubre del 2026
+  - Fecha: Noviembre del 2026
   - Licencia: GNU GPL V3
   """
 
@@ -138,7 +138,6 @@ end
     {:reply, Recursos.buscar_recurso(recursos, codigo, ubicacion), recursos}
   end
 
-  # Registra una entrada de inventario.
  # Registra una entrada de inventario.
 @impl true
 def handle_call(

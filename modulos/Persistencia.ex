@@ -8,7 +8,7 @@ defmodule Persistencia do
   - Licencia: GNU GPL V3
   """
 
-  @directorio Path.join(__DIR__, "datos")
+  @directorio Path.join(__DIR__, "../datos")
 
   @archivos %{
     usuarios: "usuarios.txt",

@@ -33,16 +33,16 @@ defmodule Usuarios do
   {:ok, [nuevo_usuario]}
   """
   def registrar(usuarios, datos) do
-
     usuario = Map.get(datos, :usuario)
     contrasena = Map.get(datos, :contrasena)
     nombre_completo = Map.get(datos, :nombre_completo)
     tipo = Map.get(datos, :tipo)
     zona_principal = Map.get(datos, :zona_principal)
 
-    existe = Enum.any?(usuarios, fn u ->
-      Map.get(u, :usuario) == usuario
-    end)
+    existe =
+      Enum.any?(usuarios, fn u ->
+        Map.get(u, :usuario) == usuario
+      end)
 
     cond do
       existe ->
@@ -78,8 +78,7 @@ defmodule Usuarios do
     end
   end
 
-
- @doc """
+  @doc """
   Funcion para autenticar un usuario mediante su nombre de usuario
   y contraseña.
 
@@ -93,10 +92,10 @@ defmodule Usuarios do
   {:ok, usuario_sin_contrasena}
   """
   def autenticar(usuarios, usuario, contrasena) do
-
-    usuario_encontrado = Enum.find(usuarios, fn u ->
-      Map.get(u, :usuario) == usuario
-    end)
+    usuario_encontrado =
+      Enum.find(usuarios, fn u ->
+        Map.get(u, :usuario) == usuario
+      end)
 
     cond do
       usuario_encontrado == nil ->
@@ -118,7 +117,6 @@ defmodule Usuarios do
     end
   end
 
-
   @doc """
   Función para conectar un usuario al sistema
 
@@ -134,12 +132,10 @@ defmodule Usuarios do
   {:ok, usuarios_actualizados}
   """
   def conectar(usuarios, usuario, contrasena, tipo, zona_principal) do
-
     conectar(usuarios, usuario, contrasena, usuario, tipo, zona_principal)
-
   end
 
-@doc """
+  @doc """
   Función para conectar un usuario al sistema
 
   ## Parametros
@@ -154,52 +150,25 @@ defmodule Usuarios do
   iex> Usuarios.conectar([], "liliana", "1234", "liliana Sanchez", :coordinador, "Centro")
   {:ok, usuarios_actualizados}
   """
-  def conectar( usuarios, usuario, contrasena, nombre_completo, tipo, zona_principal) do
-
-    usuario_encontrado = Enum.find(usuarios, fn u ->
-      Map.get(u, :usuario) == usuario
-    end)
+  def conectar(usuarios, usuario, contrasena, _nombre_completo, _tipo, _zona_principal) do
+    usuario_encontrado =
+      Enum.find(usuarios, fn u ->
+        Map.get(u, :usuario) == usuario
+      end)
 
     if usuario_encontrado == nil do
-
-      datos = %{
-        usuario: usuario,
-        contrasena: contrasena,
-        nombre_completo: nombre_completo,
-        tipo: tipo,
-        zona_principal: zona_principal
-      }
-
-      case registrar(usuarios, datos) do
-        {:ok, usuarios_actualizados} ->
-          conectar(
-            usuarios_actualizados,
-            usuario,
-            contrasena,
-            nombre_completo,
-            tipo,
-            zona_principal
-          )
-
-        {:error, motivo} ->
-          {:error, motivo}
-      end
-
+      {:error, "El usuario no existe. Regístrese primero."}
     else
-
       case autenticar(usuarios, usuario, contrasena) do
         {:ok, _usuario} ->
-
-          usuarios_actualizados = Enum.map(usuarios, fn u ->
-            if Map.get(u, :usuario) == usuario do
-              %{u |
-                conectado: true,
-                actividades: ["Inicio de sesión" | u.actividades]
-              }
-            else
-              u
-            end
-          end)
+          usuarios_actualizados =
+            Enum.map(usuarios, fn u ->
+              if Map.get(u, :usuario) == usuario do
+                %{u | conectado: true, actividades: ["Inicio de sesión" | u.actividades]}
+              else
+                u
+              end
+            end)
 
           {:ok, usuarios_actualizados}
 
@@ -209,8 +178,7 @@ defmodule Usuarios do
     end
   end
 
-
-@doc """
+  @doc """
   Función para desconectar un usuario del sistema.
 
   ## Parametros
@@ -222,31 +190,26 @@ defmodule Usuarios do
   {:ok, usuarios_actualizados}
   """
   def desconectar(usuarios, usuario) do
-
-    existe = Enum.any?(usuarios, fn u ->
-      Map.get(u, :usuario) == usuario
-    end)
-
-    if existe do
-
-      usuarios_actualizados = Enum.map(usuarios, fn u ->
-        if Map.get(u, :usuario) == usuario do
-          %{u |
-            conectado: false,
-            actividades: ["Cierre de sesión" | u.actividades]
-          }
-        else
-          u
-        end
+    existe =
+      Enum.any?(usuarios, fn u ->
+        Map.get(u, :usuario) == usuario
       end)
 
-      {:ok, usuarios_actualizados}
+    if existe do
+      usuarios_actualizados =
+        Enum.map(usuarios, fn u ->
+          if Map.get(u, :usuario) == usuario do
+            %{u | conectado: false, actividades: ["Cierre de sesión" | u.actividades]}
+          else
+            u
+          end
+        end)
 
+      {:ok, usuarios_actualizados}
     else
       {:error, "El usuario no existe"}
     end
   end
-
 
   @doc """
   Función para consultar todos los usuarios registrados en el sistema.
@@ -259,16 +222,15 @@ defmodule Usuarios do
   {:ok, lista_de_usuarios_sin_contrasenas}
   """
   def listar(usuarios) do
-
-    usuarios_sin_contrasenas = Enum.map(usuarios, fn u ->
-      Map.drop(u, [:contrasena])
-    end)
+    usuarios_sin_contrasenas =
+      Enum.map(usuarios, fn u ->
+        Map.drop(u, [:contrasena])
+      end)
 
     {:ok, usuarios_sin_contrasenas}
   end
 
-
- @doc """
+  @doc """
   Función para registrar una actividad en el historial de un usuario.
 
   ## Parametros
@@ -281,10 +243,10 @@ defmodule Usuarios do
   {:ok, usuarios_actualizados}
   """
   def registrar_actividad(usuarios, usuario, actividad) do
-
-    usuario_encontrado = Enum.any?(usuarios, fn u ->
-      Map.get(u, :usuario) == usuario
-    end)
+    usuario_encontrado =
+      Enum.any?(usuarios, fn u ->
+        Map.get(u, :usuario) == usuario
+      end)
 
     cond do
       not usuario_encontrado ->
@@ -294,22 +256,20 @@ defmodule Usuarios do
         {:error, "La actividad no es válida"}
 
       true ->
-        usuarios_actualizados = Enum.map(usuarios, fn u ->
-          if Map.get(u, :usuario) == usuario do
-            %{u |
-              actividades: [actividad | u.actividades]
-            }
-          else
-            u
-          end
-        end)
+        usuarios_actualizados =
+          Enum.map(usuarios, fn u ->
+            if Map.get(u, :usuario) == usuario do
+              %{u | actividades: [actividad | u.actividades]}
+            else
+              u
+            end
+          end)
 
         {:ok, usuarios_actualizados}
     end
   end
 
-
- @doc """
+  @doc """
   Función para verificar si un usuario tiene permiso para realizar una operación dentro del sistema.
 
   ## Parametros
@@ -321,7 +281,6 @@ defmodule Usuarios do
   {:ok, :autorizado}
   """
   def autorizar(usuario, tipos_permitidos) do
-
     cond do
       usuario == nil ->
         {:error, "Debe iniciar sesión"}
@@ -337,4 +296,45 @@ defmodule Usuarios do
     end
   end
 
+  @doc """
+  Cambia el rol de un usuario registrado en el sistema.
+
+  ## Parámetros
+  - Usuarios: Lista de usuarios registrados.
+  - Usuario: Nombre de usuario al que se cambiará el rol.
+  - Nuevo_tipo: Nuevo rol que tendrá el usuario.
+  """
+  def cambiar_tipo(usuarios, usuario, nuevo_tipo) do
+    existe =
+      Enum.any?(usuarios, fn u ->
+        Map.get(u, :usuario) == usuario
+      end)
+
+    cond do
+      not existe ->
+        {:error, "El usuario no existe"}
+
+      nuevo_tipo not in @tipos_permitidos ->
+        {:error, "El tipo de usuario no es válido"}
+
+      true ->
+        usuarios_actualizados =
+          Enum.map(usuarios, fn u ->
+            if Map.get(u, :usuario) == usuario do
+              Map.update(
+                %{u | tipo: nuevo_tipo},
+                :actividades,
+                ["Cambio de rol a #{nuevo_tipo}"],
+                fn actividades ->
+                  ["Cambio de rol a #{nuevo_tipo}" | actividades]
+                end
+              )
+            else
+              u
+            end
+          end)
+
+        {:ok, usuarios_actualizados}
+    end
+  end
 end

@@ -10,7 +10,7 @@ defmodule UsuariosServer do
 
   use GenServer
 
- @doc """
+  @doc """
   Inicia el servidor con una lista inicial de usuarios.
 
   Parámetros:
@@ -142,16 +142,27 @@ defmodule UsuariosServer do
     )
   end
 
-  @impl true
-def init(_usuarios) do
-  case Persistencia.cargar(:usuarios) do
-    {:ok, usuarios} ->
-      {:ok, usuarios}
+  @doc """
+  Cambia el rol de un usuario registrado.
 
-    {:error, mensaje} ->
-      {:stop, mensaje}
+  Parámetros:
+  - usuario: Nombre de usuario.
+  - nuevo_tipo: Nuevo rol que se asignará.
+  """
+  def cambiar_tipo(usuario, nuevo_tipo) do
+    GenServer.call(__MODULE__, {:cambiar_tipo, usuario, nuevo_tipo})
   end
-end
+
+  @impl true
+  def init(_usuarios) do
+    case Persistencia.cargar(:usuarios) do
+      {:ok, usuarios} ->
+        {:ok, usuarios}
+
+      {:error, mensaje} ->
+        {:stop, mensaje}
+    end
+  end
 
   @impl true
   def handle_call({:registrar, datos}, _from, usuarios) do
@@ -169,14 +180,14 @@ end
         _from,
         usuarios
       ) do
-
-    resultado = Usuarios.conectar(
-      usuarios,
-      usuario,
-      contrasena,
-      tipo,
-      zona_principal
-    )
+    resultado =
+      Usuarios.conectar(
+        usuarios,
+        usuario,
+        contrasena,
+        tipo,
+        zona_principal
+      )
 
     responder(resultado, usuarios)
   end
@@ -186,15 +197,15 @@ end
         _from,
         usuarios
       ) do
-
-    resultado = Usuarios.conectar(
-      usuarios,
-      usuario,
-      contrasena,
-      nombre_completo,
-      tipo,
-      zona_principal
-    )
+    resultado =
+      Usuarios.conectar(
+        usuarios,
+        usuario,
+        contrasena,
+        nombre_completo,
+        tipo,
+        zona_principal
+      )
 
     responder(resultado, usuarios)
   end
@@ -210,9 +221,10 @@ end
   end
 
   def handle_call({:buscar, usuario}, _from, usuarios) do
-    usuario_encontrado = Enum.find(usuarios, fn u ->
-      Map.get(u, :usuario) == usuario
-    end)
+    usuario_encontrado =
+      Enum.find(usuarios, fn u ->
+        Map.get(u, :usuario) == usuario
+      end)
 
     resultado =
       case usuario_encontrado do
@@ -227,13 +239,15 @@ end
   end
 
   def handle_call(:conectados, _from, usuarios) do
-    lista = Enum.filter(usuarios, fn u ->
-      Map.get(u, :conectado, false)
-    end)
+    lista =
+      Enum.filter(usuarios, fn u ->
+        Map.get(u, :conectado, false)
+      end)
 
-    resultado = Enum.map(lista, fn u ->
-      Map.drop(u, [:contrasena])
-    end)
+    resultado =
+      Enum.map(lista, fn u ->
+        Map.drop(u, [:contrasena])
+      end)
 
     {:reply, {:ok, resultado}, usuarios}
   end
@@ -243,12 +257,12 @@ end
         _from,
         usuarios
       ) do
-
-    resultado = Usuarios.registrar_actividad(
-      usuarios,
-      usuario,
-      actividad
-    )
+    resultado =
+      Usuarios.registrar_actividad(
+        usuarios,
+        usuario,
+        actividad
+      )
 
     responder(resultado, usuarios)
   end
@@ -258,10 +272,10 @@ end
         _from,
         usuarios
       ) do
-
-    usuario_encontrado = Enum.find(usuarios, fn u ->
-      Map.get(u, :usuario) == usuario
-    end)
+    usuario_encontrado =
+      Enum.find(usuarios, fn u ->
+        Map.get(u, :usuario) == usuario
+      end)
 
     usuario_publico =
       case usuario_encontrado do
@@ -269,15 +283,21 @@ end
         encontrado -> Map.drop(encontrado, [:contrasena])
       end
 
-    resultado = Usuarios.autorizar(
-      usuario_publico,
-      tipos_permitidos
-    )
+    resultado =
+      Usuarios.autorizar(
+        usuario_publico,
+        tipos_permitidos
+      )
 
     {:reply, resultado, usuarios}
   end
 
-   # Actualiza el estado del servidor cuando una operación es exitosa.
+  def handle_call({:cambiar_tipo, usuario, nuevo_tipo}, _from, usuarios) do
+    resultado = Usuarios.cambiar_tipo(usuarios, usuario, nuevo_tipo)
+    responder(resultado, usuarios)
+  end
+
+  # Actualiza el estado del servidor cuando una operación es exitosa.
   # Guarda los cambios antes de actualizar el estado.
   defp responder({:ok, nuevos_usuarios}, usuarios_anteriores) do
     case Persistencia.guardar(:usuarios, nuevos_usuarios) do
@@ -295,4 +315,4 @@ end
   defp responder({:error, mensaje}, usuarios) do
     {:reply, {:error, mensaje}, usuarios}
   end
-  end
+end
