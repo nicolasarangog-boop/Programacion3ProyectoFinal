@@ -9,6 +9,9 @@ Code.require_file("Mensajes.ex", __DIR__)
 Code.require_file("Mascotas.ex", __DIR__)
 Code.require_file("Albergues.ex", __DIR__)
 
+#Carga de persistencia
+Code.require_file("Persistencia.ex", __DIR__)
+
 # Carga de los servidores y el supervisor
 Code.require_file("Recursos_Server.ex", __DIR__)
 Code.require_file("Usuarios_Server.ex", __DIR__)

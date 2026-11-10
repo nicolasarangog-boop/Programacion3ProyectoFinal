@@ -143,9 +143,15 @@ defmodule UsuariosServer do
   end
 
   @impl true
-  def init(usuarios) do
-    {:ok, usuarios}
+def init(_usuarios) do
+  case Persistencia.cargar(:usuarios) do
+    {:ok, usuarios} ->
+      {:ok, usuarios}
+
+    {:error, mensaje} ->
+      {:stop, mensaje}
   end
+end
 
   @impl true
   def handle_call({:registrar, datos}, _from, usuarios) do
@@ -271,16 +277,22 @@ defmodule UsuariosServer do
     {:reply, resultado, usuarios}
   end
 
-  # Actualiza el estado del servidor cuando una operación es exitosa.
-  # Nunca devuelve las contraseñas almacenadas.
-  defp responder({:ok, nuevos_usuarios}, _usuarios) do
-    {:ok, usuarios_publicos} = Usuarios.listar(nuevos_usuarios)
+   # Actualiza el estado del servidor cuando una operación es exitosa.
+  # Guarda los cambios antes de actualizar el estado.
+  defp responder({:ok, nuevos_usuarios}, usuarios_anteriores) do
+    case Persistencia.guardar(:usuarios, nuevos_usuarios) do
+      {:ok, _mensaje} ->
+        {:ok, usuarios_publicos} = Usuarios.listar(nuevos_usuarios)
 
-    {:reply, {:ok, usuarios_publicos}, nuevos_usuarios}
+        {:reply, {:ok, usuarios_publicos}, nuevos_usuarios}
+
+      {:error, mensaje} ->
+        {:reply, {:error, mensaje}, usuarios_anteriores}
+    end
   end
 
   # Conserva el estado anterior cuando una operación falla.
   defp responder({:error, mensaje}, usuarios) do
     {:reply, {:error, mensaje}, usuarios}
   end
-end
+  end

@@ -103,21 +103,28 @@ defmodule RecursosServer do
 
   # Inicializa el estado interno del servidor.
   @impl true
-  def init(recursos) do
-    {:ok, recursos}
-  end
+def init(_recursos) do
+  recursos = Persistencia.cargar_o_vacio(:recursos)
+  {:ok, recursos}
+end
 
   # Registra un recurso y actualiza el inventario.
-  @impl true
-  def handle_call({:registrar, datos}, _from, recursos) do
-    case Recursos.registrar_recurso(recursos, datos) do
-      {:ok, nuevos_recursos} ->
-        {:reply, {:ok, nuevos_recursos}, nuevos_recursos}
+ @impl true
+def handle_call({:registrar, datos}, _from, recursos) do
+  case Recursos.registrar_recurso(recursos, datos) do
+    {:ok, nuevos_recursos} ->
+      case Persistencia.guardar(:recursos, nuevos_recursos) do
+        {:ok, _mensaje} ->
+          {:reply, {:ok, nuevos_recursos}, nuevos_recursos}
 
-      {:error, motivo} ->
-        {:reply, {:error, motivo}, recursos}
-    end
+        {:error, motivo} ->
+          {:reply, {:error, "No se pudo guardar el recurso: #{motivo}"}, recursos}
+      end
+
+    {:error, motivo} ->
+      {:reply, {:error, motivo}, recursos}
   end
+end
 
   # Devuelve el inventario actual.
   @impl true
@@ -132,70 +139,90 @@ defmodule RecursosServer do
   end
 
   # Registra una entrada de inventario.
-  @impl true
-  def handle_call(
-        {:entrada, codigo, ubicacion, cantidad, descripcion},
-        _from,
-        recursos
-      ) do
-    case Recursos.registrar_entrada(
-           recursos,
-           codigo,
-           ubicacion,
-           cantidad,
-           descripcion
-         ) do
-      {:ok, nuevos_recursos} ->
-        {:reply, {:ok, nuevos_recursos}, nuevos_recursos}
+ # Registra una entrada de inventario.
+@impl true
+def handle_call(
+      {:entrada, codigo, ubicacion, cantidad, descripcion},
+      _from,
+      recursos
+    ) do
+  case Recursos.registrar_entrada(
+         recursos,
+         codigo,
+         ubicacion,
+         cantidad,
+         descripcion
+       ) do
+    {:ok, nuevos_recursos} ->
+      case Persistencia.guardar(:recursos, nuevos_recursos) do
+        {:ok, _mensaje} ->
+          {:reply, {:ok, nuevos_recursos}, nuevos_recursos}
 
-      {:error, motivo} ->
-        {:reply, {:error, motivo}, recursos}
-    end
+        {:error, motivo} ->
+          {:reply, {:error, "No se pudo guardar la entrada: #{motivo}"}, recursos}
+      end
+
+    {:error, motivo} ->
+      {:reply, {:error, motivo}, recursos}
   end
+end
 
-  # Registra una salida de inventario.
-  @impl true
-  def handle_call(
-        {:salida, codigo, ubicacion, cantidad, descripcion},
-        _from,
-        recursos
-      ) do
-    case Recursos.registrar_salida(
-           recursos,
-           codigo,
-           ubicacion,
-           cantidad,
-           descripcion
-         ) do
-      {:ok, nuevos_recursos} ->
-        {:reply, {:ok, nuevos_recursos}, nuevos_recursos}
+# Registra una salida de inventario.
+@impl true
+def handle_call(
+      {:salida, codigo, ubicacion, cantidad, descripcion},
+      _from,
+      recursos
+    ) do
+  case Recursos.registrar_salida(
+         recursos,
+         codigo,
+         ubicacion,
+         cantidad,
+         descripcion
+       ) do
+    {:ok, nuevos_recursos} ->
+      case Persistencia.guardar(:recursos, nuevos_recursos) do
+        {:ok, _mensaje} ->
+          {:reply, {:ok, nuevos_recursos}, nuevos_recursos}
 
-      {:error, motivo} ->
-        {:reply, {:error, motivo}, recursos}
-    end
+        {:error, motivo} ->
+          {:reply, {:error, "No se pudo guardar la salida: #{motivo}"}, recursos}
+      end
+
+    {:error, motivo} ->
+      {:reply, {:error, motivo}, recursos}
   end
+end
 
-  # Transfiere recursos entre centros.
-  @impl true
-  def handle_call(
-        {:transferir, codigo, origen, destino, cantidad},
-        _from,
-        recursos
-      ) do
-    case Recursos.transferir_recurso(
-           recursos,
-           codigo,
-           origen,
-           destino,
-           cantidad
-         ) do
-      {:ok, nuevos_recursos} ->
-        {:reply, {:ok, nuevos_recursos}, nuevos_recursos}
 
-      {:error, motivo} ->
-        {:reply, {:error, motivo}, recursos}
-    end
+# Transfiere recursos entre centros.
+@impl true
+def handle_call(
+      {:transferir, codigo, origen, destino, cantidad},
+      _from,
+      recursos
+    ) do
+  case Recursos.transferir_recurso(
+         recursos,
+         codigo,
+         origen,
+         destino,
+         cantidad
+       ) do
+    {:ok, nuevos_recursos} ->
+      case Persistencia.guardar(:recursos, nuevos_recursos) do
+        {:ok, _mensaje} ->
+          {:reply, {:ok, nuevos_recursos}, nuevos_recursos}
+
+        {:error, motivo} ->
+          {:reply, {:error, "No se pudo guardar la transferencia: #{motivo}"}, recursos}
+      end
+
+    {:error, motivo} ->
+      {:reply, {:error, motivo}, recursos}
   end
+end
 
   # Consulta los movimientos de un recurso.
   @impl true

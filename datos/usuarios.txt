@@ -1,0 +1,8 @@
+[#{usuario => <<"carlos">>,
+   contrasena =>
+       <<"03AC674216F3E15C761EE1A5E255F067953623C8B388B4459E13F978D7C846F4">>,
+   nombre_completo => <<"Carlos Perez">>,tipo => voluntario,
+   zona_principal => <<"norte">>,conectado => true,
+   actividades => [<<"Inicio de sesión"/utf8>>]},
+ #{usuario => <<"laura">>,nombre_completo => <<"Laura Gomez">>,
+   tipo => coordinador,zona_principal => <<"centro">>}].
