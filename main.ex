@@ -1,21 +1,21 @@
 # Carga de los módulos funcionales
-Code.require_file("Usuarios.exs", __DIR__)
-Code.require_file("Zonas.exs", __DIR__)
-Code.require_file("Necesidades.exs", __DIR__)
-Code.require_file("Recursos.exs", __DIR__)
+Code.require_file(Path.join([__DIR__, "modulos", "Usuarios.exs"]))
+Code.require_file(Path.join([__DIR__, "modulos", "Zonas.exs"]))
+Code.require_file(Path.join([__DIR__, "modulos", "Necesidades.exs"]))
+Code.require_file(Path.join([__DIR__, "modulos", "Recursos.exs"]))
 
-Code.require_file("Personas.ex", __DIR__)
-Code.require_file("Mensajes.ex", __DIR__)
-Code.require_file("Mascotas.ex", __DIR__)
-Code.require_file("Albergues.ex", __DIR__)
+Code.require_file(Path.join([__DIR__, "modulos", "Personas.ex"]))
+Code.require_file(Path.join([__DIR__, "modulos", "Mensajes.ex"]))
+Code.require_file(Path.join([__DIR__, "modulos", "Mascotas.ex"]))
+Code.require_file(Path.join([__DIR__, "modulos", "Albergues.ex"]))
 
 # Carga de persistencia
-Code.require_file("Persistencia.ex", __DIR__)
+Code.require_file(Path.join([__DIR__, "modulos", "Persistencia.ex"]))
 
 # Carga de los servidores y el supervisor
-Code.require_file("Recursos_Server.ex", __DIR__)
-Code.require_file("Usuarios_Server.ex", __DIR__)
-Code.require_file("Supervisor_Server.ex", __DIR__)
+Code.require_file(Path.join([__DIR__, "server", "Recursos_Server.ex"]))
+Code.require_file(Path.join([__DIR__, "server", "Usuarios_Server.ex"]))
+Code.require_file(Path.join([__DIR__, "server", "Supervisor_Server.ex"]))
 
 defmodule Main do
   @moduledoc """
@@ -23,7 +23,7 @@ defmodule Main do
   distribuido de coordinación y gestión de emergencias.
 
   - Autores: Briyith Sanchez Alonso y Nicolas Arango Gutierrez
-  - Fecha: Octubre del 2026
+  - Fecha: Noviembre del 2026
   - Licencia: GNU GPL V3
   """
 
@@ -92,6 +92,7 @@ defmodule Main do
 
       case argumentos do
         ["exit"] ->
+          desconectar_usuario()
           IO.puts("Cerrando la interfaz del sistema...")
 
         ["help"] ->
@@ -112,24 +113,70 @@ defmodule Main do
           bucle()
 
         ["list_users"] ->
-          mostrar_resultado(UsuariosServer.listar())
+          case autorizar_actual([:administrador]) do
+            {:ok, :autorizado} ->
+              mostrar_resultado(UsuariosServer.listar())
+
+            {:error, mensaje} ->
+              IO.puts("Acceso denegado: #{mensaje}")
+          end
+
+          bucle()
+
+        ["change_user_role", usuario, nuevo_tipo] ->
+          case autorizar_actual([:administrador]) do
+            {:ok, :autorizado} ->
+              case convertir_tipo(nuevo_tipo) do
+                {:ok, tipo_atom} ->
+                  mostrar_resultado(UsuariosServer.cambiar_tipo(usuario, tipo_atom))
+
+                :error ->
+                  IO.puts("Tipo de usuario inválido.")
+                  IO.puts("Tipos permitidos: ciudadano, voluntario, coordinador, administrador.")
+              end
+
+            {:error, mensaje} ->
+              IO.puts("Acceso denegado: #{mensaje}")
+          end
+
           bucle()
 
         # Comandos Zonas
         ["register_zone", nombre, nivel, personas] ->
-          registrar_zona(nombre, nivel, personas)
+          case autorizar_actual([:coordinador, :administrador]) do
+            {:ok, :autorizado} ->
+              registrar_zona(nombre, nivel, personas)
+
+            {:error, mensaje} ->
+              IO.puts("Acceso denegado: #{mensaje}")
+          end
+
           bucle()
 
         ["list_zones"] ->
           mostrar_resultado(Zonas.listar_zonas(Process.get(:zonas, [])))
           bucle()
 
-        ["register_sector", nombre_zona, nombre_sector, nivel, personas] ->
-          registrar_sector(nombre_zona, nombre_sector, nivel, personas)
+        ["register_sector", zona, sector, nivel, personas] ->
+          case autorizar_actual([:coordinador, :administrador]) do
+            {:ok, :autorizado} ->
+              registrar_sector(zona, sector, nivel, personas)
+
+            {:error, mensaje} ->
+              IO.puts("Acceso denegado: #{mensaje}")
+          end
+
           bucle()
 
-        ["register_attention_point", nombre_zona, nombre_sector, nombre_punto, personas] ->
-          registrar_punto(nombre_zona, nombre_sector, nombre_punto, personas)
+        ["register_attention_point", zona, sector, punto, personas] ->
+          case autorizar_actual([:coordinador, :administrador]) do
+            {:ok, :autorizado} ->
+              registrar_punto(zona, sector, punto, personas)
+
+            {:error, mensaje} ->
+              IO.puts("Acceso denegado: #{mensaje}")
+          end
+
           bucle()
 
         ["show_zone", nombre] ->
@@ -137,7 +184,14 @@ defmodule Main do
           bucle()
 
         ["update_zone_level", nombre, nivel] ->
-          actualizar_nivel_zona(nombre, nivel)
+          case autorizar_actual([:coordinador, :administrador]) do
+            {:ok, :autorizado} ->
+              actualizar_nivel_zona(nombre, nivel)
+
+            {:error, mensaje} ->
+              IO.puts("Acceso denegado: #{mensaje}")
+          end
+
           bucle()
 
         ["zone_hierarchy"] ->
@@ -177,7 +231,14 @@ defmodule Main do
           bucle()
 
         ["update_need_status", identificador, estado] ->
-          actualizar_estado_necesidad(identificador, estado)
+          case autorizar_actual([:voluntario, :coordinador, :administrador]) do
+            {:ok, :autorizado} ->
+              actualizar_estado_necesidad(identificador, estado)
+
+            {:error, mensaje} ->
+              IO.puts("Acceso denegado: #{mensaje}")
+          end
+
           bucle()
 
         ["needs_summary"] ->
@@ -186,7 +247,14 @@ defmodule Main do
 
         # Comandos Recursos
         ["register_resource", nombre, categoria, cantidad, unidad, ubicacion] ->
-          registrar_recurso(nombre, categoria, cantidad, unidad, ubicacion)
+          case autorizar_actual([:coordinador, :administrador]) do
+            {:ok, :autorizado} ->
+              registrar_recurso(nombre, categoria, cantidad, unidad, ubicacion)
+
+            {:error, mensaje} ->
+              IO.puts("Acceso denegado: #{mensaje}")
+          end
+
           bucle()
 
         ["list_resources"] ->
@@ -194,11 +262,25 @@ defmodule Main do
           bucle()
 
         ["assign_resource", id_necesidad, codigo, ubicacion, cantidad] ->
-          asignar_recurso_necesidad(id_necesidad, codigo, ubicacion, cantidad)
+          case autorizar_actual([:coordinador, :administrador]) do
+            {:ok, :autorizado} ->
+              asignar_recurso_necesidad(id_necesidad, codigo, ubicacion, cantidad)
+
+            {:error, mensaje} ->
+              IO.puts("Acceso denegado: #{mensaje}")
+          end
+
           bucle()
 
         ["transfer_resource", codigo, origen, destino, cantidad] ->
-          transferir_recurso(codigo, origen, destino, cantidad)
+          case autorizar_actual([:coordinador, :administrador]) do
+            {:ok, :autorizado} ->
+              transferir_recurso(codigo, origen, destino, cantidad)
+
+            {:error, mensaje} ->
+              IO.puts("Acceso denegado: #{mensaje}")
+          end
+
           bucle()
 
         ["resource_history", codigo, ubicacion] ->
@@ -222,7 +304,14 @@ defmodule Main do
           bucle()
 
         ["update_person_status", id, estado] ->
-          actualizar_estado_persona(id, estado)
+          case autorizar_actual([:voluntario, :coordinador, :administrador]) do
+            {:ok, :autorizado} ->
+              actualizar_estado_persona(id, estado)
+
+            {:error, mensaje} ->
+              IO.puts("Acceso denegado: #{mensaje}")
+          end
+
           bucle()
 
         ["person_history", id] ->
@@ -293,16 +382,37 @@ defmodule Main do
           bucle()
 
         ["match_pets", id] ->
-          buscar_coincidencias_mascota(id)
+          case autorizar_actual([:voluntario, :coordinador, :administrador]) do
+            {:ok, :autorizado} ->
+              buscar_coincidencias_mascota(id)
+
+            {:error, mensaje} ->
+              IO.puts("Acceso denegado: #{mensaje}")
+          end
+
           bucle()
 
         ["confirm_pet_match", id1, id2] ->
-          confirmar_coincidencia_mascota(id1, id2)
+          case autorizar_actual([:voluntario, :coordinador, :administrador]) do
+            {:ok, :autorizado} ->
+              confirmar_coincidencia_mascota(id1, id2)
+
+            {:error, mensaje} ->
+              IO.puts("Acceso denegado: #{mensaje}")
+          end
+
           bucle()
 
         # Comandos de albergues
         ["register_shelter", codigo, nombre, zona, capacidad] ->
-          registrar_albergue(codigo, nombre, zona, capacidad)
+          case autorizar_actual([:coordinador, :administrador]) do
+            {:ok, :autorizado} ->
+              registrar_albergue(codigo, nombre, zona, capacidad)
+
+            {:error, mensaje} ->
+              IO.puts("Acceso denegado: #{mensaje}")
+          end
+
           bucle()
 
         ["list_shelters"] ->
@@ -314,11 +424,25 @@ defmodule Main do
           bucle()
 
         ["enter_shelter", codigo, id_persona] ->
-          ingresar_persona_albergue(codigo, id_persona)
+          case autorizar_actual([:voluntario, :coordinador, :administrador]) do
+            {:ok, :autorizado} ->
+              ingresar_persona_albergue(codigo, id_persona)
+
+            {:error, mensaje} ->
+              IO.puts("Acceso denegado: #{mensaje}")
+          end
+
           bucle()
 
         ["leave_shelter", codigo, id_persona] ->
-          retirar_persona_albergue(codigo, id_persona)
+          case autorizar_actual([:voluntario, :coordinador, :administrador]) do
+            {:ok, :autorizado} ->
+              retirar_persona_albergue(codigo, id_persona)
+
+            {:error, mensaje} ->
+              IO.puts("Acceso denegado: #{mensaje}")
+          end
+
           bucle()
 
         ["shelter_spaces", codigo] ->
@@ -345,12 +469,26 @@ defmodule Main do
           mostrar_resultado(Albergues.mayor_ocupacion(Process.get(:albergues, [])))
           bucle()
 
-        ["associate_shelter_resource", codigo, id_recurso] ->
-          asociar_recurso_albergue(codigo, id_recurso)
+        ["associate_shelter_resource", codigo_albergue, codigo_recurso] ->
+          case autorizar_actual([:coordinador, :administrador]) do
+            {:ok, :autorizado} ->
+              asociar_recurso_albergue(codigo_albergue, codigo_recurso)
+
+            {:error, mensaje} ->
+              IO.puts("Acceso denegado: #{mensaje}")
+          end
+
           bucle()
 
-        ["associate_shelter_need", codigo, id_necesidad] ->
-          asociar_necesidad_albergue(codigo, id_necesidad)
+        ["associate_shelter_need", codigo_albergue, codigo_necesidad] ->
+          case autorizar_actual([:coordinador, :administrador]) do
+            {:ok, :autorizado} ->
+              asociar_necesidad_albergue(codigo_albergue, codigo_necesidad)
+
+            {:error, mensaje} ->
+              IO.puts("Acceso denegado: #{mensaje}")
+          end
+
           bucle()
 
         _ ->
@@ -365,19 +503,41 @@ defmodule Main do
     end
   end
 
-  # Registra un usuario nuevo.
+  # Registra un usuario nuevo según los permisos disponibles.
   defp registrar_usuario(usuario, contrasena, nombre, tipo, zona) do
     case convertir_tipo(tipo) do
       {:ok, tipo_atom} ->
-        datos = %{
-          usuario: usuario,
-          contrasena: contrasena,
-          nombre_completo: nombre,
-          tipo: tipo_atom,
-          zona_principal: zona
-        }
+        usuario_actual = Process.get(:usuario_actual)
 
-        mostrar_resultado(UsuariosServer.registrar(datos))
+        permiso =
+          if usuario_actual == nil do
+            if tipo_atom == :ciudadano do
+              {:ok, :autorizado}
+            else
+              {:error, "Sin iniciar sesión solo puede registrarse como ciudadano."}
+            end
+          else
+            UsuariosServer.autorizar(
+              usuario_actual,
+              [:administrador]
+            )
+          end
+
+        case permiso do
+          {:ok, :autorizado} ->
+            datos = %{
+              usuario: usuario,
+              contrasena: contrasena,
+              nombre_completo: nombre,
+              tipo: tipo_atom,
+              zona_principal: zona
+            }
+
+            mostrar_resultado(UsuariosServer.registrar(datos))
+
+          {:error, mensaje} ->
+            IO.puts("Acceso denegado: #{mensaje}")
+        end
 
       :error ->
         IO.puts("Tipo de usuario inválido.")
@@ -994,6 +1154,8 @@ defmodule Main do
           {:error, mensaje} ->
             IO.puts("Error al guardar las coincidencias: #{mensaje}")
         end
+      {:error, mensaje} ->
+        IO.puts("Error al buscar coincidencias: #{mensaje}")
     end
   end
 
@@ -1074,6 +1236,8 @@ defmodule Main do
           {:error, mensaje} ->
             IO.puts("Error al guardar el albergue: #{mensaje}")
         end
+      {:error, mensaje} ->
+        IO.puts("Error al ingresar la persona al albergue: #{mensaje}")
     end
   end
 
@@ -1109,6 +1273,8 @@ defmodule Main do
           {:error, mensaje} ->
             IO.puts("Error al guardar el albergue: #{mensaje}")
         end
+      {:error, mensaje} ->
+        IO.puts("Error al retirar la persona del albergue: #{mensaje}")
     end
   end
 
@@ -1153,6 +1319,7 @@ defmodule Main do
     IO.puts("  connect usuario contraseña tipo zona")
     IO.puts("  disconnect")
     IO.puts("  list_users")
+    IO.puts("  change_user_role usuario nuevo_tipo")
 
     # Comandos de zonas
     IO.puts("\nComandos de zonas:")
@@ -1303,6 +1470,17 @@ defmodule Main do
 
       {:error, mensaje} ->
         IO.puts("Error al guardar los datos: #{mensaje}")
+    end
+  end
+
+  # Verifica los permisos del usuario que inició sesión.
+  defp autorizar_actual(tipos_permitidos) do
+    case Process.get(:usuario_actual) do
+      nil ->
+        {:error, "Debe iniciar sesión."}
+
+      usuario ->
+        UsuariosServer.autorizar(usuario, tipos_permitidos)
     end
   end
 end

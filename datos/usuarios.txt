@@ -1,16 +1,37 @@
-[#{usuario => <<"prueba_persistencia">>,
+[#{usuario => <<"voluntario01">>,
    contrasena =>
        <<"5AC0852E770506DCD80F1A36D20BA7878BF82244B836D9324593BD14BC56DCB5">>,
-   tipo => voluntario,nombre_completo => <<"UsuarioPrueba">>,
-   zona_principal => <<"Norte">>,conectado => false,
+   tipo => coordinador,nombre_completo => <<"VoluntarioPrueba">>,
+   zona_principal => <<"Norte">>,conectado => true,
    actividades =>
-       [<<"Cierre de sesión"/utf8>>,<<"Inicio de sesión"/utf8>>,
+       [<<"Cambio de rol a coordinador">>,<<"Inicio de sesión"/utf8>>]},
+ #{usuario => <<"ciudadano01">>,
+   contrasena =>
+       <<"5AC0852E770506DCD80F1A36D20BA7878BF82244B836D9324593BD14BC56DCB5">>,
+   tipo => ciudadano,nombre_completo => <<"CiudadanoPrueba">>,
+   zona_principal => <<"Norte">>,conectado => true,
+   actividades =>
+       [<<"Inicio de sesión"/utf8>>,<<"Cierre de sesión"/utf8>>,
         <<"Inicio de sesión"/utf8>>]},
+ #{usuario => <<"admin001">>,
+   contrasena =>
+       <<"5AC0852E770506DCD80F1A36D20BA7878BF82244B836D9324593BD14BC56DCB5">>,
+   tipo => administrador,nombre_completo => <<"Admin001">>,
+   zona_principal => <<"Norte">>,conectado => true,
+   actividades =>
+       [<<"Inicio de sesión"/utf8>>,<<"Inicio de sesión"/utf8>>,
+        <<"Cierre de sesión"/utf8>>,<<"Inicio de sesión"/utf8>>,
+        <<"Cierre de sesión"/utf8>>,<<"Inicio de sesión"/utf8>>,
+        <<"Inicio de sesión"/utf8>>,
+        <<67,105,101,114,114,101,32,100,101,32,115,101,115,105,239,191,189,110>>,
+        <<73,110,105,99,105,111,32,100,101,32,115,101,115,105,239,191,189,110>>,
+        <<73,110,105,99,105,111,32,100,101,32,115,101,115,105,239,191,189,110>>]},
  #{usuario => <<"carlos">>,
    contrasena =>
        <<"03AC674216F3E15C761EE1A5E255F067953623C8B388B4459E13F978D7C846F4">>,
    tipo => voluntario,nombre_completo => <<"Carlos Perez">>,
    zona_principal => <<"norte">>,conectado => true,
-   actividades => [<<"Inicio de sesión"/utf8>>]},
+   actividades =>
+       [<<73,110,105,99,105,111,32,100,101,32,115,101,115,105,239,191,189,110>>]},
  #{usuario => <<"laura">>,tipo => coordinador,
    nombre_completo => <<"Laura Gomez">>,zona_principal => <<"centro">>}].
