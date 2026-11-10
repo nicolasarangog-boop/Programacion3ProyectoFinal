@@ -110,6 +110,7 @@ defmodule Main do
 
         ["disconnect"] ->
           desconectar_usuario()
+          IO.puts("Sesión cerrada correctamente.")
           bucle()
 
         ["list_users"] ->
