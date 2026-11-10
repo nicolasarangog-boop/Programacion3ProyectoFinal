@@ -1,4 +1,4 @@
-## Sistema Distribuido Coordinacion y Gestión Emergencias
+## Sistema Distribuido Coordinación y Gestión Emergencias
 *Proyecto Final*
 
 - **Espacio Académico:** Programación III
