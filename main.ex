@@ -9,7 +9,7 @@ Code.require_file("Mensajes.ex", __DIR__)
 Code.require_file("Mascotas.ex", __DIR__)
 Code.require_file("Albergues.ex", __DIR__)
 
-#Carga de persistencia
+# Carga de persistencia
 Code.require_file("Persistencia.ex", __DIR__)
 
 # Carga de los servidores y el supervisor
@@ -38,24 +38,31 @@ defmodule Main do
     case SistemaSupervisor.start_link() do
       {:ok, pid} ->
         IO.puts("Sistema iniciado correctamente.")
-        Process.put(:zonas, [])
-        Process.put(:necesidades, [])
-        Process.put(:personas, [])
-        Process.put(:mensajes, [])
-        Process.put(:mascotas, [])
-        Process.put(:albergues, [])
-        IO.puts("Supervisor: #{inspect(pid)}")
-        mostrar_ayuda()
-        bucle()
+
+        case cargar_datos_iniciales() do
+          :ok ->
+            IO.puts("Información recuperada correctamente.")
+            IO.puts("Supervisor: #{inspect(pid)}")
+            mostrar_ayuda()
+            bucle()
+
+          {:error, mensaje} ->
+            IO.puts("Error al recuperar la información: #{mensaje}")
+        end
 
       {:error, {:already_started, pid}} ->
         IO.puts("El sistema ya se encuentra iniciado.")
-        IO.puts("Supervisor: #{inspect(pid)}")
-        mostrar_ayuda()
-        bucle()
 
-      {:error, razon} ->
-        IO.puts("Error al iniciar el sistema: #{inspect(razon)}")
+        case cargar_datos_iniciales() do
+          :ok ->
+            IO.puts("Información recuperada correctamente.")
+            IO.puts("Supervisor: #{inspect(pid)}")
+            mostrar_ayuda()
+            bucle()
+
+          {:error, mensaje} ->
+            IO.puts("Error al recuperar la información: #{mensaje}")
+        end
     end
   end
 
@@ -91,7 +98,7 @@ defmodule Main do
           mostrar_ayuda()
           bucle()
 
-        #Comandos Usuario
+        # Comandos Usuario
         ["register_user", usuario, contrasena, nombre, tipo, zona] ->
           registrar_usuario(usuario, contrasena, nombre, tipo, zona)
           bucle()
@@ -108,7 +115,7 @@ defmodule Main do
           mostrar_resultado(UsuariosServer.listar())
           bucle()
 
-        #Comandos Zonas
+        # Comandos Zonas
         ["register_zone", nombre, nivel, personas] ->
           registrar_zona(nombre, nivel, personas)
           bucle()
@@ -148,7 +155,7 @@ defmodule Main do
 
           bucle()
 
-        #Comandos Necesidades
+        # Comandos Necesidades
         ["register_need", tipo, cantidad, prioridad, zona, descripcion, responsable] ->
           registrar_necesidad(tipo, cantidad, prioridad, zona, descripcion, responsable)
           bucle()
@@ -177,7 +184,7 @@ defmodule Main do
           mostrar_resultado(Necesidades.contar_estado(Process.get(:necesidades, [])))
           bucle()
 
-        #Comandos Recursos
+        # Comandos Recursos
         ["register_resource", nombre, categoria, cantidad, unidad, ubicacion] ->
           registrar_recurso(nombre, categoria, cantidad, unidad, ubicacion)
           bucle()
@@ -454,9 +461,6 @@ defmodule Main do
       :error ->
         IO.puts("Nivel inválido. Usa: critico, alto, medio o bajo.")
 
-      :error_personas ->
-        IO.puts("La cantidad de personas debe ser un número entero.")
-
       _ ->
         IO.puts("La cantidad de personas debe ser un número entero.")
     end
@@ -535,10 +539,9 @@ defmodule Main do
   defp convertir_nivel("bajo"), do: {:ok, :bajo}
   defp convertir_nivel(_nivel), do: :error
 
-  # Actualiza el estado de las zonas cuando una operación tiene éxito.
+  # Actualiza la lista de zonas cuando el guardado tiene éxito.
   defp guardar_zonas({:ok, zonas}) do
-    Process.put(:zonas, zonas)
-    mostrar_resultado({:ok, zonas})
+    guardar_lista(:zonas, :zonas, zonas)
   end
 
   defp guardar_zonas({:error, mensaje}) do
@@ -676,10 +679,9 @@ defmodule Main do
     end
   end
 
-  # Actualiza la lista de necesidades cuando una operación tiene éxito.
+  # Actualiza la lista de necesidades cuando el guardado tiene éxito.
   defp guardar_necesidades({:ok, necesidades}) do
-    Process.put(:necesidades, necesidades)
-    mostrar_resultado({:ok, necesidades})
+    guardar_lista(:necesidades, :necesidades, necesidades)
   end
 
   defp guardar_necesidades({:error, mensaje}) do
@@ -728,13 +730,27 @@ defmodule Main do
              codigo,
              cantidad_numero
            ) do
-      Process.put(:necesidades, necesidades_actualizadas)
+      case Persistencia.guardar(:necesidades, necesidades_actualizadas) do
+        {:ok, _mensaje} ->
+          Process.put(:necesidades, necesidades_actualizadas)
 
-      IO.puts("Recurso asignado correctamente.")
-      IO.puts("Necesidad: #{id_necesidad}")
-      IO.puts("Recurso: #{codigo}")
-      IO.puts("Cantidad asignada: #{cantidad_numero}")
-      IO.puts("Ubicación de origen: #{ubicacion}")
+          IO.puts("Recurso asignado correctamente.")
+          IO.puts("Necesidad: #{id_necesidad}")
+          IO.puts("Recurso: #{codigo}")
+          IO.puts("Cantidad asignada: #{cantidad_numero}")
+          IO.puts("Ubicación de origen: #{ubicacion}")
+
+        {:error, mensaje} ->
+          # Devuelve el inventario si no se pudo guardar la necesidad.
+          RecursosServer.entrada(
+            codigo,
+            ubicacion,
+            cantidad_numero,
+            "Reversión de asignación a necesidad #{id_necesidad}"
+          )
+
+          IO.puts("Error al guardar la necesidad: #{mensaje}")
+      end
     else
       :error ->
         IO.puts("La cantidad debe ser un número entero.")
@@ -858,10 +874,9 @@ defmodule Main do
     end
   end
 
-  # Actualiza la lista de personas cuando una operación tiene éxito.
+  # Actualiza la lista de personas cuando el guardado tiene éxito.
   defp guardar_personas({:ok, personas}) do
-    Process.put(:personas, personas)
-    mostrar_resultado({:ok, personas})
+    guardar_lista(:personas, :personas, personas)
   end
 
   defp guardar_personas({:error, mensaje}) do
@@ -899,10 +914,9 @@ defmodule Main do
     guardar_mensajes(resultado)
   end
 
-  # Actualiza la lista de mensajes cuando una operación tiene éxito.
+  # Actualiza la lista de mensajes cuando el guardado tiene éxito.
   defp guardar_mensajes({:ok, mensajes}) do
-    Process.put(:mensajes, mensajes)
-    mostrar_resultado({:ok, mensajes})
+    guardar_lista(:mensajes, :mensajes, mensajes)
   end
 
   defp guardar_mensajes({:error, mensaje}) do
@@ -964,19 +978,22 @@ defmodule Main do
 
     case resultado do
       {:ok, nuevos_reportes, coincidencias} ->
-        Process.put(:mascotas, nuevos_reportes)
+        case Persistencia.guardar(:mascotas, nuevos_reportes) do
+          {:ok, _mensaje} ->
+            Process.put(:mascotas, nuevos_reportes)
 
-        IO.puts("Búsqueda de coincidencias completada.")
+            IO.puts("Búsqueda de coincidencias completada.")
 
-        if coincidencias == [] do
-          IO.puts("No se encontraron posibles coincidencias.")
-        else
-          IO.puts("Posibles coincidencias encontradas:")
-          mostrar_resultado(coincidencias)
+            if coincidencias == [] do
+              IO.puts("No se encontraron posibles coincidencias.")
+            else
+              IO.puts("Posibles coincidencias encontradas:")
+              mostrar_resultado(coincidencias)
+            end
+
+          {:error, mensaje} ->
+            IO.puts("Error al guardar las coincidencias: #{mensaje}")
         end
-
-      {:error, mensaje} ->
-        IO.puts("Error: #{mensaje}")
     end
   end
 
@@ -992,10 +1009,9 @@ defmodule Main do
     guardar_mascotas(resultado)
   end
 
-  # Actualiza la lista de reportes cuando una operación tiene éxito.
+  # Actualiza la lista de reportes cuando el guardado tiene éxito.
   defp guardar_mascotas({:ok, reportes}) do
-    Process.put(:mascotas, reportes)
-    mostrar_resultado({:ok, reportes})
+    guardar_lista(:mascotas, :mascotas, reportes)
   end
 
   defp guardar_mascotas({:error, mensaje}) do
@@ -1038,14 +1054,26 @@ defmodule Main do
 
     case resultado do
       {:ok, nuevos_albergues, nuevas_personas} ->
-        Process.put(:albergues, nuevos_albergues)
-        Process.put(:personas, nuevas_personas)
+        albergues_anteriores = Process.get(:albergues, [])
 
-        IO.puts("Persona ingresada correctamente al albergue.")
-        IO.puts("Estado de la persona actualizado a: en albergue")
+        case Persistencia.guardar(:albergues, nuevos_albergues) do
+          {:ok, _mensaje} ->
+            case Persistencia.guardar(:personas, nuevas_personas) do
+              {:ok, _mensaje} ->
+                Process.put(:albergues, nuevos_albergues)
+                Process.put(:personas, nuevas_personas)
 
-      {:error, mensaje} ->
-        IO.puts("Error: #{mensaje}")
+                IO.puts("Persona ingresada correctamente al albergue.")
+                IO.puts("Estado de la persona actualizado a: en albergue")
+
+              {:error, mensaje} ->
+                Persistencia.guardar(:albergues, albergues_anteriores)
+                IO.puts("Error al guardar la persona: #{mensaje}")
+            end
+
+          {:error, mensaje} ->
+            IO.puts("Error al guardar el albergue: #{mensaje}")
+        end
     end
   end
 
@@ -1061,14 +1089,26 @@ defmodule Main do
 
     case resultado do
       {:ok, nuevos_albergues, nuevas_personas} ->
-        Process.put(:albergues, nuevos_albergues)
-        Process.put(:personas, nuevas_personas)
+        albergues_anteriores = Process.get(:albergues, [])
 
-        IO.puts("Persona retirada correctamente del albergue.")
-        IO.puts("Estado de la persona actualizado a: localizada")
+        case Persistencia.guardar(:albergues, nuevos_albergues) do
+          {:ok, _mensaje} ->
+            case Persistencia.guardar(:personas, nuevas_personas) do
+              {:ok, _mensaje} ->
+                Process.put(:albergues, nuevos_albergues)
+                Process.put(:personas, nuevas_personas)
 
-      {:error, mensaje} ->
-        IO.puts("Error: #{mensaje}")
+                IO.puts("Persona retirada correctamente del albergue.")
+                IO.puts("Estado de la persona actualizado a: localizada")
+
+              {:error, mensaje} ->
+                Persistencia.guardar(:albergues, albergues_anteriores)
+                IO.puts("Error al guardar la persona: #{mensaje}")
+            end
+
+          {:error, mensaje} ->
+            IO.puts("Error al guardar el albergue: #{mensaje}")
+        end
     end
   end
 
@@ -1096,10 +1136,9 @@ defmodule Main do
     guardar_albergues(resultado)
   end
 
-  # Actualiza la lista de albergues cuando una operación tiene éxito.
+  # Actualiza la lista de albergues cuando el guardado tiene éxito.
   defp guardar_albergues({:ok, albergues}) do
-    Process.put(:albergues, albergues)
-    mostrar_resultado({:ok, albergues})
+    guardar_lista(:albergues, :albergues, albergues)
   end
 
   defp guardar_albergues({:error, mensaje}) do
@@ -1108,14 +1147,14 @@ defmodule Main do
 
   # Muestra los comandos disponibles.
   defp mostrar_ayuda do
-    #Comandos de usuarios
+    # Comandos de usuarios
     IO.puts("\nComandos de usuarios:")
     IO.puts("  register_user usuario contraseña nombre tipo zona")
     IO.puts("  connect usuario contraseña tipo zona")
     IO.puts("  disconnect")
     IO.puts("  list_users")
 
-    #Comandos de zonas
+    # Comandos de zonas
     IO.puts("\nComandos de zonas:")
     IO.puts("  register_zone nombre nivel personas")
     IO.puts("  list_zones")
@@ -1128,7 +1167,7 @@ defmodule Main do
     IO.puts("\nNiveles permitidos:")
     IO.puts("  critico, alto, medio, bajo")
 
-    #Comandos de necesidades
+    # Comandos de necesidades
     IO.puts("\nComandos de necesidades:")
     IO.puts("  register_need tipo cantidad prioridad zona descripcion responsable")
     IO.puts("  list_needs")
@@ -1150,7 +1189,7 @@ defmodule Main do
     IO.puts("\nEstados:")
     IO.puts("  pendiente, asignada, en_atencion, atendida, cancelada")
 
-    #Comandos de recursos
+    # Comandos de recursos
     IO.puts("\nComandos de recursos:")
     IO.puts("  register_resource nombre categoria cantidad unidad ubicacion")
     IO.puts("  list_resources")
@@ -1159,7 +1198,7 @@ defmodule Main do
     IO.puts("  resource_history REC-001 Centro")
     IO.puts("  critical_resources limite")
 
-    #Comandos de personas
+    # Comandos de personas
     IO.puts("\nComandos de personas:")
     IO.puts("  register_person ID nombre documento edad zona estado")
     IO.puts("  list_persons")
@@ -1171,7 +1210,7 @@ defmodule Main do
     IO.puts("  sin_informacion, reportada, localizada")
     IO.puts("  trasladada, en_albergue, reunificada")
 
-    #Comandos de mensajes
+    # Comandos de mensajes
     IO.puts("\nComandos de mensajes:")
     IO.puts("  register_message ID remitente destinatario \"contenido\"")
     IO.puts("  list_messages")
@@ -1182,7 +1221,7 @@ defmodule Main do
     IO.puts("\nEstados de mensajes:")
     IO.puts("  pendiente, enviado, entregado, leido")
 
-    #Comandos de mascotas
+    # Comandos de mascotas
     IO.puts("\nComandos de mascotas:")
     IO.puts("  register_pet ID tipo especie nombre caracteristicas color tamanio zona contacto")
     IO.puts("  list_pets")
@@ -1196,7 +1235,7 @@ defmodule Main do
     IO.puts("\nEstados de reportes:")
     IO.puts("  activa, posible coincidencia, resuelta")
 
-    #Comandos de albergues
+    # Comandos de albergues
     IO.puts("\nComandos de albergues:")
     IO.puts("  register_shelter CODIGO nombre zona capacidad")
     IO.puts("  list_shelters")
@@ -1209,12 +1248,62 @@ defmodule Main do
     IO.puts("  associate_shelter_resource CODIGO ID_RECURSO")
     IO.puts("  associate_shelter_need CODIGO ID_NECESIDAD")
 
-    #Otros comandos
+    # Otros comandos
     IO.puts("\nOtros comandos:")
     IO.puts("  help")
     IO.puts("  exit")
 
     IO.puts("\nUsa comillas dobles para nombres con espacios.")
+  end
+
+  # Recupera los datos de los módulos que no utilizan GenServer.
+  defp cargar_datos_iniciales do
+    modulos = [
+      :zonas,
+      :necesidades,
+      :personas,
+      :mensajes,
+      :mascotas,
+      :albergues
+    ]
+
+    resultado =
+      Enum.reduce_while(modulos, {:ok, %{}}, fn modulo, {:ok, acumulado} ->
+        case Persistencia.cargar(modulo) do
+          {:ok, datos} when is_list(datos) ->
+            {:cont, {:ok, Map.put(acumulado, modulo, datos)}}
+
+          {:ok, _datos} ->
+            {:halt, {:error, "Formato incorrecto en #{modulo}."}}
+
+          {:error, mensaje} ->
+            {:halt, {:error, mensaje}}
+        end
+      end)
+
+    case resultado do
+      {:ok, datos} ->
+        Enum.each(datos, fn {modulo, informacion} ->
+          Process.put(modulo, informacion)
+        end)
+
+        :ok
+
+      {:error, mensaje} ->
+        {:error, mensaje}
+    end
+  end
+
+  # Guarda los datos y actualiza la lista correspondiente en memoria.
+  defp guardar_lista(modulo, clave, datos) do
+    case Persistencia.guardar(modulo, datos) do
+      {:ok, _mensaje} ->
+        Process.put(clave, datos)
+        mostrar_resultado({:ok, datos})
+
+      {:error, mensaje} ->
+        IO.puts("Error al guardar los datos: #{mensaje}")
+    end
   end
 end
 

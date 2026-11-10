@@ -1,4 +1,3 @@
-
 defmodule Persistencia do
   @moduledoc """
   Gestiona la persistencia de información del sistema de emergencias
@@ -64,45 +63,37 @@ defmodule Persistencia do
     {:error, "Parámetros inválidos"}
   end
 
-  @doc """
+    @doc """
   Recupera la información almacenada de un módulo.
 
   ## Parámetros
   - modulo: átomo que identifica el módulo.
 
   ## Ejemplo
-      Persistencia.cargar(:zonas)
+      Persistencia.cargar(:usuarios)
   """
   def cargar(modulo) when is_atom(modulo) do
-    case Map.fetch(@archivos, modulo) do
-      {:ok, archivo} ->
-        ruta = Path.join(@directorio, archivo)
+  case Map.fetch(@archivos, modulo) do
+    {:ok, archivo} ->
+      ruta = Path.join(@directorio, archivo)
 
-        case :file.consult(String.to_charlist(ruta)) do
-          {:ok, [datos]} ->
-            {:ok, datos}
+      case File.read(ruta) do
+        {:ok, contenido} ->
+          interpretar_contenido(contenido)
 
-          {:ok, []} ->
-            {:error, "El archivo no contiene información"}
+        {:error, :enoent} ->
+          {:ok, []}
 
-          {:error, motivo} ->
-            case motivo do
-              :enoent ->
-                {:ok, []}
+        {:error, motivo} ->
+          {:error, "No se pudo leer el archivo: #{inspect(motivo)}"}
+      end
 
-              _ ->
-                {:error, "No se pudo leer el archivo: #{inspect(motivo)}"}
-            end
-        end
-
-      :error ->
-        {:error, "El módulo no está registrado en persistencia"}
-    end
+    :error ->
+      {:error, "El módulo no está registrado en persistencia"}
   end
+end
 
-  def cargar(_modulo) do
-    {:error, "Parámetro inválido"}
-  end
+def cargar(_modulo), do: {:error, "Parámetro inválido"}
 
   @doc """
   Guarda la información de varios módulos.
@@ -149,7 +140,8 @@ defmodule Persistencia do
       end
     end)
   end
-    @doc """
+
+  @doc """
   Recupera la información de un módulo.
   Si el archivo todavía no existe, devuelve una lista vacía.
 
@@ -161,14 +153,46 @@ defmodule Persistencia do
   """
   def cargar_o_vacio(modulo) do
     case cargar(modulo) do
-      {:ok, datos} when is_list(datos) ->
+      {:ok, datos} ->
         datos
-
-      {:ok, _datos} ->
-        raise "La información de #{modulo} no tiene el formato esperado."
 
       {:error, motivo} ->
         raise "Error al recuperar #{modulo}: #{motivo}"
     end
   end
+
+  # Convierte archivos con codificación Latin-1 a UTF-8 cuando sea necesario.
+  defp normalizar_codificacion(contenido) do
+    if String.valid?(contenido) do
+      contenido
+    else
+      :unicode.characters_to_binary(contenido, :latin1, :utf8)
+    end
+  end
+
+  # Interpreta información almacenada en texto plano.
+defp interpretar_contenido(contenido) do
+  texto = normalizar_codificacion(contenido)
+
+  if String.trim(texto) == "" do
+    {:ok, []}
+  else
+    case :erl_scan.string(String.to_charlist(texto)) do
+      {:ok, tokens, _linea} ->
+        case :erl_parse.parse_term(tokens) do
+          {:ok, datos} when is_list(datos) ->
+            {:ok, datos}
+
+          {:ok, _datos} ->
+            {:error, "El archivo no contiene una lista"}
+
+          {:error, motivo} ->
+            {:error, "Formato de archivo inválido: #{inspect(motivo)}"}
+        end
+
+      {:error, motivo, _linea} ->
+        {:error, "No se pudo interpretar el archivo: #{inspect(motivo)}"}
+    end
+  end
+end
 end

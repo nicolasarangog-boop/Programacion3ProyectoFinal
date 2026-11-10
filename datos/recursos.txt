@@ -1,3 +1,15 @@
-[#{nombre => <<"Agua potable">>,categoria => <<"Suministros">>,
+[#{nombre => <<"Botiquin">>,categoria => <<"suministros">>,
+   unidad => <<"unidades">>,ubicacion => <<"Norte">>,codigo => <<"REC-002">>,
+   historial => [],cantidad_disponible => 20},
+ #{nombre => <<"Agua potable">>,categoria => <<"Suministros">>,
    unidad => <<"litros">>,ubicacion => <<"Centro">>,codigo => <<"REC-001">>,
-   cantidad_disponible => 50,historial => []}].
+   historial =>
+       [#{tipo => salida,cantidad => 20,
+          descripcion => <<"Asignación a necesidad NEC-001"/utf8>>,
+          fecha =>
+              #{microsecond => {696000,6},
+                second => 29,calendar => 'Elixir.Calendar.ISO',month => 11,
+                '__struct__' => 'Elixir.DateTime',day => 10,year => 2026,
+                minute => 2,hour => 4,time_zone => <<"Etc/UTC">>,
+                zone_abbr => <<"UTC">>,utc_offset => 0,std_offset => 0}}],
+   cantidad_disponible => 30}].

@@ -1,0 +1,22 @@
+[#{id => <<"PET001">>,nombre => <<"Max">>,tipo => <<"perdida">>,
+   zona => <<"Norte">>,estado => <<"resuelta">>,especie => <<"perro">>,
+   caracteristicas => <<"Collar rojo">>,color => <<"cafe">>,
+   tamanio => <<"mediano">>,contacto => <<"3001234567">>,
+   fecha =>
+       #{microsecond => {638000,6},
+         second => 34,calendar => 'Elixir.Calendar.ISO',month => 11,
+         '__struct__' => 'Elixir.DateTime',day => 10,year => 2026,
+         minute => 56,hour => 3,time_zone => <<"Etc/UTC">>,
+         zone_abbr => <<"UTC">>,utc_offset => 0,std_offset => 0},
+   coincidencia => <<"PET002">>},
+ #{id => <<"PET002">>,nombre => <<"Perro encontrado">>,
+   tipo => <<"encontrada">>,zona => <<"Norte">>,estado => <<"resuelta">>,
+   especie => <<"perro">>,caracteristicas => <<"Collar rojo">>,
+   color => <<"cafe">>,tamanio => <<"mediano">>,contacto => <<"3007654321">>,
+   fecha =>
+       #{microsecond => {188000,6},
+         second => 26,calendar => 'Elixir.Calendar.ISO',month => 11,
+         '__struct__' => 'Elixir.DateTime',day => 10,year => 2026,minute => 7,
+         hour => 4,time_zone => <<"Etc/UTC">>,zone_abbr => <<"UTC">>,
+         utc_offset => 0,std_offset => 0},
+   coincidencia => <<"PET001">>}].

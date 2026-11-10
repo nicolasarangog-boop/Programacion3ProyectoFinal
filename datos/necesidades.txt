@@ -1,0 +1,4 @@
+[#{id => <<"NEC-001">>,tipo => agua,zona => <<"Norte">>,cantidad => 100,
+   prioridad => critica,descripcion => <<"Falta de agua potable">>,
+   responsable => <<"Coordinador">>,estado => asignada,
+   recursos_asignados => [#{cantidad => 20,codigo => <<"REC-001">>}]}].
