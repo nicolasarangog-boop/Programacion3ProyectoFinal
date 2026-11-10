@@ -17,9 +17,10 @@
    contrasena =>
        <<"5AC0852E770506DCD80F1A36D20BA7878BF82244B836D9324593BD14BC56DCB5">>,
    tipo => administrador,nombre_completo => <<"Admin001">>,
-   zona_principal => <<"Norte">>,conectado => true,
+   zona_principal => <<"Norte">>,conectado => false,
    actividades =>
-       [<<"Inicio de sesión"/utf8>>,<<"Inicio de sesión"/utf8>>,
+       [<<"Cierre de sesión"/utf8>>,<<"Inicio de sesión"/utf8>>,
+        <<"Inicio de sesión"/utf8>>,<<"Inicio de sesión"/utf8>>,
         <<"Cierre de sesión"/utf8>>,<<"Inicio de sesión"/utf8>>,
         <<"Cierre de sesión"/utf8>>,<<"Inicio de sesión"/utf8>>,
         <<"Inicio de sesión"/utf8>>,
