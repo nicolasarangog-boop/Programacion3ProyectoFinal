@@ -1,8 +1,16 @@
-[#{usuario => <<"carlos">>,
+[#{usuario => <<"prueba_persistencia">>,
+   contrasena =>
+       <<"5AC0852E770506DCD80F1A36D20BA7878BF82244B836D9324593BD14BC56DCB5">>,
+   tipo => voluntario,nombre_completo => <<"UsuarioPrueba">>,
+   zona_principal => <<"Norte">>,conectado => false,
+   actividades =>
+       [<<"Cierre de sesión"/utf8>>,<<"Inicio de sesión"/utf8>>,
+        <<"Inicio de sesión"/utf8>>]},
+ #{usuario => <<"carlos">>,
    contrasena =>
        <<"03AC674216F3E15C761EE1A5E255F067953623C8B388B4459E13F978D7C846F4">>,
-   nombre_completo => <<"Carlos Perez">>,tipo => voluntario,
+   tipo => voluntario,nombre_completo => <<"Carlos Perez">>,
    zona_principal => <<"norte">>,conectado => true,
    actividades => [<<"Inicio de sesión"/utf8>>]},
- #{usuario => <<"laura">>,nombre_completo => <<"Laura Gomez">>,
-   tipo => coordinador,zona_principal => <<"centro">>}].
+ #{usuario => <<"laura">>,tipo => coordinador,
+   nombre_completo => <<"Laura Gomez">>,zona_principal => <<"centro">>}].

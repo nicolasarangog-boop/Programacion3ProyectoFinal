@@ -1,0 +1,4 @@
+[#{nombre => <<"Albergue Norte">>,zona => <<"Norte">>,personas => [],
+   necesidades => [<<"NEC-001">>],
+   codigo => <<"ALB001">>,capacidad => 50,ocupacion => 0,
+   recursos => [<<"REC-002">>]}].

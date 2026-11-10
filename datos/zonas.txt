@@ -1,1 +1,3 @@
-g2wAAAABdAAAAAJ3Bm5vbWJyZW0AAAAGQ2VudHJvdwVuaXZlbHcHY3JpdGljb2o=
+[#{nombre => <<"Norte">>,nivel => alto,necesidades => [],albergues => [],
+   personas_afectadas => 100,reportes => [],sectores => [],recursos => []},
+ #{nombre => <<"Centro">>,nivel => critico}].
